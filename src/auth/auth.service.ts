@@ -2,6 +2,8 @@ import {
   Injectable,
   BadRequestException,
   UnauthorizedException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SendOtpDto } from './dto/send-otp.dto';
@@ -13,11 +15,13 @@ import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { SessionsService } from './sessions.service';
+import { SessionResponse, SessionUser } from './dto/session.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
+    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     private jwtService: JwtService,
     private sessionsService: SessionsService,
@@ -148,9 +152,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Generate JWT token
-    const token = await this.jwtService.signAsync({ userId: user.id });
-
     // Calculate session expiration (default to 7 days, or use JWT expiration)
     const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
     const expiresAt = this.calculateExpirationDate(expiresIn);
@@ -163,10 +164,50 @@ export class AuthService {
       userAgent,
     );
 
+    // Generate JWT token with sessionId included
+    const token = await this.jwtService.signAsync({
+      userId: user.id,
+      role: user.role,
+      name: user.name,
+      email: user.email,
+      sessionId: session.sessionId,
+    });
+
     return {
       message: 'Logged in successfully',
       token,
       sessionId: session.sessionId,
+    };
+  }
+
+  /**
+   * Logout the user by invalidating their session
+   */
+  async logout(sessionId: string): Promise<{ message: string }> {
+    // Delete the session from the database
+    await this.sessionsService.deleteSession(sessionId);
+
+    return {
+      message: 'Logged out successfully',
+    };
+  }
+
+  /**
+   * Get the current session information
+   */
+  async getCurrentSession(user: User): Promise<SessionResponse> {
+    const sessionUser: SessionUser = {
+      id: user.id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      image: '',
+      organization: null,
+      phone: '',
+    };
+
+    return {
+      user: sessionUser,
     };
   }
 

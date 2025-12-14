@@ -1,11 +1,13 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   HttpCode,
   HttpStatus,
   NotFoundException,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -14,12 +16,17 @@ import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtService } from '@nestjs/jwt';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { User } from 'generated/prisma/client';
 
 @Controller()
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
   ) {}
 
   @Post('send-otp')
@@ -57,5 +64,35 @@ export class AuthController {
     const userAgent = req.headers['user-agent'] || undefined;
 
     return this.authService.login(loginDto, ipAddress, userAgent);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  async logout(@Req() req: Request) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new NotFoundException('Token not found');
+    }
+
+    const token = authHeader.substring(7);
+
+    // Decode token to get sessionId
+    const payload = await this.jwtService.verifyAsync(token, {
+      secret: process.env.JWT_SECRET,
+    });
+
+    if (!payload.sessionId) {
+      throw new NotFoundException('Session ID not found in token');
+    }
+
+    return this.authService.logout(payload.sessionId);
+  }
+
+  @Get('session')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  async getCurrentSession(@CurrentUser() currentUser: User) {
+    return this.authService.getCurrentSession(currentUser);
   }
 }
