@@ -12,6 +12,7 @@ import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'generated/prisma/client';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('organization')
 export class OrganizationController {
@@ -30,6 +31,7 @@ export class OrganizationController {
   }
 
   @Get(':slug')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Roles([Role.SUPERADMIN, Role.MODERATOR, Role.OPS, Role.ADMIN])
   async findOne(@Param('slug') slug: string) {
     return await this.organizationService.findOne(slug);

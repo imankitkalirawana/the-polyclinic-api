@@ -23,13 +23,13 @@ export class UsersController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles([Role.ADMIN])
+  @Roles([Role.SUPERADMIN, Role.MODERATOR, Role.OPS, Role.ADMIN])
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
   @Get()
-  @Roles([Role.ADMIN])
+  @Roles([Role.SUPERADMIN, Role.MODERATOR, Role.OPS, Role.ADMIN])
   findAll() {
     return this.usersService.findAll();
   }
