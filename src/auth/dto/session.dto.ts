@@ -6,7 +6,7 @@ export interface SessionUser {
   name: string;
   role: Role;
   image?: string | null;
-  organization?: string | null;
+  organizationId?: string | null;
   phone?: string | null;
 }
 

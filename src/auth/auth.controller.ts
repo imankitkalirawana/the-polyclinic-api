@@ -7,7 +7,6 @@ import {
   HttpStatus,
   NotFoundException,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -16,9 +15,9 @@ import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { Public } from './decorators/public.decorator';
 import { User } from 'generated/prisma/client';
 
 @Controller()
@@ -31,6 +30,7 @@ export class AuthController {
 
   @Post('send-otp')
   @HttpCode(HttpStatus.OK)
+  @Public()
   async sendOtp(@Body() sendOtpDto: SendOtpDto) {
     const userExists = await this.usersService.userExistsByEmail(
       sendOtpDto.email,
@@ -43,18 +43,21 @@ export class AuthController {
 
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
+  @Public()
   verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
     return this.authService.verifyOtp(verifyOtpDto);
   }
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @Public()
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Public()
   login(@Body() loginDto: LoginDto, @Req() req: Request) {
     const ipAddress =
       (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
@@ -68,7 +71,6 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
   async logout(@Req() req: Request) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -90,7 +92,6 @@ export class AuthController {
 
   @Get('session')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
   async getCurrentSession(@CurrentUser() currentUser: User) {
     return this.authService.getCurrentSession(currentUser);
   }

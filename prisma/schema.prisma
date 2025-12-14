@@ -25,16 +25,16 @@ enum Role {
 }
 
 model User {
-  id        Int    @id @default(autoincrement())
-  name      String
-  email     String    @unique
-  password  String
-  role      Role      @default(PATIENT)
-  phone     String?
-  image     String?
-  organization String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id               Int      @id @default(autoincrement())
+  name             String
+  email            String   @unique
+  password         String
+  role             Role     @default(PATIENT)
+  phone            String?
+  image            String?
+  organizationSlug String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@map("users")
 }
@@ -63,4 +63,23 @@ model Otp {
   @@index([email])
   @@index([email, otp])
   @@map("otps")
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+model Organization {
+  id             Int      @id @default(autoincrement())
+  name           String
+  slug           String   @unique
+  logoUrl        String?
+  status         Status   @default(ACTIVE)
+  subscriptionId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([slug])
+  @@map("organizations")
 }

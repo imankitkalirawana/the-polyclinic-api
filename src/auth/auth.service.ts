@@ -204,7 +204,7 @@ export class AuthService {
         role: user.role,
         image: user.image,
         phone: user.phone,
-        organization: user.organization,
+        organizationId: user.organizationSlug,
       },
     };
   }
