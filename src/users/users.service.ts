@@ -41,7 +41,7 @@ export class UsersService {
     return users.map((user) => this.excludePassword(user));
   }
 
-  async findOne(id: string): Promise<Omit<User, 'password'>> {
+  async findOne(id: number): Promise<Omit<User, 'password'>> {
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -53,8 +53,29 @@ export class UsersService {
     return this.excludePassword(user);
   }
 
+  async findByEmail(email: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
+    }
+
+    return user;
+  }
+
+  async userExistsByEmail(email: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    return !!user;
+  }
+
   async update(
-    id: string,
+    id: number,
     updateUserDto: UpdateUserDto,
   ): Promise<Omit<User, 'password'>> {
     const existingUser = await this.prisma.user.findUnique({
@@ -84,7 +105,7 @@ export class UsersService {
     return this.excludePassword(user);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: number): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id },
     });

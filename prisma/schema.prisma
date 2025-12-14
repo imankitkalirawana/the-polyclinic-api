@@ -40,3 +40,16 @@ model Session {
   @@index([userId])
   @@map("sessions")
 }
+
+model Otp {
+  id        Int      @id @default(autoincrement())
+  email     String
+  otp       String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([email, otp])
+  @@map("otps")
+}
