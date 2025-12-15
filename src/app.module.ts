@@ -38,10 +38,9 @@ import { DatabaseInitService } from './common/database-init.service';
         Otp,
         Tenant,
       ],
-      // Keep synchronize disabled to avoid breaking existing data
-      // Run fix-null-names.sql first if you need to fix data issues
-      // For new tables like 'tenants', create them manually or use migrations
-      synchronize: true,
+      // Migrations are now enabled - use 'pnpm migration:run' to run migrations
+      // Use 'pnpm migration:generate -- -n MigrationName' to generate new migrations
+      synchronize: false,
     }),
     UsersModule,
     AuthModule,

@@ -14,6 +14,9 @@ export class Tenant {
   @Column()
   name: string;
 
+  @Column({ unique: true })
+  slug: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
