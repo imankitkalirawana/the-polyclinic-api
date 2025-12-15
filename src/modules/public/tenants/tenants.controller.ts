@@ -25,18 +25,21 @@ export class TenantsController {
     return this.tenantsService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.tenantsService.findOne(id);
+  @Get(':slug')
+  findOne(@Param('slug') slug: string) {
+    return this.tenantsService.findOne(slug);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTenantDto: UpdateTenantDto) {
-    return this.tenantsService.update(id, updateTenantDto);
+  @Patch(':slug')
+  update(
+    @Param('slug') slug: string,
+    @Body() updateTenantDto: UpdateTenantDto,
+  ) {
+    return this.tenantsService.update(slug, updateTenantDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tenantsService.remove(id);
+  @Delete(':slug')
+  remove(@Param('slug') slug: string) {
+    return this.tenantsService.remove(slug);
   }
 }

@@ -46,6 +46,7 @@ export class TenantsService implements OnModuleInit {
           CREATE TABLE public.tenants (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             name VARCHAR NOT NULL,
+            slug VARCHAR NOT NULL UNIQUE,
             "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
           );
@@ -64,11 +65,11 @@ export class TenantsService implements OnModuleInit {
     const savedTenant = await this.tenantRepository.save(tenant);
 
     // Create schema for the tenant
-    const schemaName = getTenantSchemaName(savedTenant.id);
+    const schemaName = getTenantSchemaName(savedTenant.slug);
     await this.dataSource.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);
 
     // Create connection to tenant schema
-    const tenantConfig = getTenantConnectionConfig(savedTenant.id);
+    const tenantConfig = getTenantConnectionConfig(savedTenant.slug);
     const tenantConnection = new DataSource(tenantConfig);
     await tenantConnection.initialize();
 
@@ -91,27 +92,34 @@ export class TenantsService implements OnModuleInit {
     return this.tenantRepository.find();
   }
 
-  async findOne(id: string): Promise<Tenant> {
-    const tenant = await this.tenantRepository.findOne({ where: { id } });
+  async findOne(slug: string): Promise<Tenant> {
+    const tenant = await this.tenantRepository.findOne({ where: { slug } });
     if (!tenant) {
-      throw new NotFoundException(`Tenant with id ${id} not found`);
+      throw new NotFoundException(`Tenant with slug ${slug} not found`);
     }
     return tenant;
   }
 
-  async update(id: string, updateTenantDto: UpdateTenantDto): Promise<Tenant> {
-    await this.tenantRepository.update(id, updateTenantDto);
-    return this.findOne(id);
+  async update(
+    slug: string,
+    updateTenantDto: UpdateTenantDto,
+  ): Promise<Tenant> {
+    const tenant = await this.findOne(slug);
+    await this.tenantRepository.update(tenant.id, updateTenantDto);
+    return this.findOne(slug);
   }
 
-  async remove(id: string): Promise<void> {
-    // Drop the tenant schema
-    const schemaName = getTenantSchemaName(id);
+  async remove(slug: string): Promise<void> {
+    // Resolve the tenant first to get its id
+    const tenant = await this.findOne(slug);
+
+    // Drop the tenant schema using slug
+    const schemaName = getTenantSchemaName(tenant.slug);
     await this.dataSource.query(
       `DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`,
     );
 
-    // Delete tenant record
-    await this.tenantRepository.delete(id);
+    // Delete tenant record using id
+    await this.tenantRepository.delete(tenant.id);
   }
 }

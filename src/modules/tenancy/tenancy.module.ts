@@ -11,29 +11,29 @@ const connectionFactory = {
   provide: CONNECTION,
   scope: Scope.REQUEST,
   useFactory: async (request: Request): Promise<DataSource | null> => {
-    const tenantId = (request as any).tenantId;
+    const tenantSlug = (request as any).tenantSlug;
 
-    if (!tenantId) {
+    if (!tenantSlug) {
       return null;
     }
 
     // Check if connection already exists
-    if (connections.has(tenantId)) {
-      const existingConnection = connections.get(tenantId);
+    if (connections.has(tenantSlug)) {
+      const existingConnection = connections.get(tenantSlug);
       if (existingConnection?.isInitialized) {
         return existingConnection;
       }
     }
 
     // Create new connection
-    const config = getTenantConnectionConfig(tenantId);
+    const config = getTenantConnectionConfig(tenantSlug);
     const connection = new DataSource(config);
 
     if (!connection.isInitialized) {
       await connection.initialize();
     }
 
-    connections.set(tenantId, connection);
+    connections.set(tenantSlug, connection);
     return connection;
   },
   inject: [REQUEST],
@@ -46,11 +46,11 @@ const connectionFactory = {
 export class TenancyModule implements OnModuleDestroy {
   async onModuleDestroy() {
     // Close all connections on module destroy
-    for (const [tenantId, connection] of connections.entries()) {
+    for (const [tenantSlug, connection] of connections.entries()) {
       if (connection.isInitialized) {
         await connection.destroy();
       }
-      connections.delete(tenantId);
+      connections.delete(tenantSlug);
     }
   }
 }

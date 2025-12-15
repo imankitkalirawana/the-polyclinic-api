@@ -1,7 +1,9 @@
 import { join } from 'path';
 import { DataSourceOptions } from 'typeorm';
 
-export function getTenantConnectionConfig(tenantId: string): DataSourceOptions {
+export function getTenantConnectionConfig(
+  tenantSlug: string,
+): DataSourceOptions {
   return {
     type: 'postgres',
     host: process.env.DB_HOST,
@@ -9,7 +11,7 @@ export function getTenantConnectionConfig(tenantId: string): DataSourceOptions {
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    schema: `tenant_${tenantId}`,
+    schema: `tenant_${tenantSlug}`,
     entities: [
       join(__dirname, './modules/tenanted/**/entities/*.entity.{ts,js}'),
     ],

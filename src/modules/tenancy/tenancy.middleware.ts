@@ -7,25 +7,25 @@ import { Request, Response, NextFunction } from 'express';
 
 // Extend Express Request type
 interface TenantRequest extends Request {
-  tenantId?: string;
+  tenantSlug?: string;
 }
 
 @Injectable()
 export class TenancyMiddleware implements NestMiddleware {
   use(req: TenantRequest, res: Response, next: NextFunction) {
-    const tenantId = req.headers['x-tenant-id'] as string;
+    const tenantSlug = req.headers['x-tenant-slug'] as string;
 
-    if (!tenantId) {
-      // Allow requests without tenant ID for public routes (like creating tenants)
+    if (!tenantSlug) {
+      // Allow requests without tenant slug for public routes (like creating tenants)
       // You might want to make this stricter based on your route structure
       return next();
     }
 
-    if (typeof tenantId !== 'string' || tenantId.trim() === '') {
-      throw new BadRequestException('Invalid tenant ID');
+    if (typeof tenantSlug !== 'string' || tenantSlug.trim() === '') {
+      throw new BadRequestException('Invalid tenant slug');
     }
 
-    req.tenantId = tenantId.trim();
+    req.tenantSlug = tenantSlug.trim();
     next();
   }
 }
