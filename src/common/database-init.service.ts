@@ -13,7 +13,7 @@ export class DatabaseInitService implements OnModuleInit {
 
   private async ensureTablesExist() {
     try {
-      const tables = ['users', 'sessions', 'otp', 'organizations', 'tenants'];
+      const tables = ['users', 'sessions', 'otps', 'organizations', 'tenants'];
 
       for (const tableName of tables) {
         await this.ensureTableExists(tableName);

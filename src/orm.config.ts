@@ -10,6 +10,6 @@ export const publicOrmConfig: DataSourceOptions = {
   database: process.env.DB_NAME,
   schema: 'public',
   entities: [join(__dirname, './modules/public/**/entities/*.entity.{ts,js}')],
-  synchronize: false,
+  synchronize: true,
   logging: process.env.NODE_ENV === 'development',
 };

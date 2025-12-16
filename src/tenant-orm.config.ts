@@ -15,7 +15,7 @@ export function getTenantConnectionConfig(
     entities: [
       join(__dirname, './modules/tenanted/**/entities/*.entity.{ts,js}'),
     ],
-    synchronize: false,
+    synchronize: true,
     logging: process.env.NODE_ENV === 'development',
   };
 }
