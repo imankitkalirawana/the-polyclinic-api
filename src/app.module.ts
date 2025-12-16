@@ -32,7 +32,7 @@ import { AuthModule as TenantedAuthModule } from './modules/tenanted/auth/auth.m
       ],
       // Migrations are now enabled - use 'pnpm migration:run' to run migrations
       // Use 'pnpm migration:generate -- -n MigrationName' to generate new migrations
-      synchronize: false,
+      synchronize: true,
     }),
     JwtModule.register({
       secret:
