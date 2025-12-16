@@ -11,7 +11,7 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { Tenant } from './entities/tenant.entity';
 import { getTenantSchemaName } from '../../tenancy/tenancy.utils';
-import { getTenantConnectionConfig } from '../../../tenant-orm.config';
+import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
 
 @Injectable()
 export class TenantsService implements OnModuleInit {
@@ -22,6 +22,7 @@ export class TenantsService implements OnModuleInit {
     private readonly tenantRepository: Repository<Tenant>,
     @Inject(DataSource)
     private readonly dataSource: DataSource,
+    private readonly tenantAuthInitService: TenantAuthInitService,
   ) {}
 
   async onModuleInit() {
@@ -64,26 +65,8 @@ export class TenantsService implements OnModuleInit {
     const tenant = this.tenantRepository.create(createTenantDto);
     const savedTenant = await this.tenantRepository.save(tenant);
 
-    // Create schema for the tenant
-    const schemaName = getTenantSchemaName(savedTenant.slug);
-    await this.dataSource.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);
-
-    // Create connection to tenant schema
-    const tenantConfig = getTenantConnectionConfig(savedTenant.slug);
-    const tenantConnection = new DataSource(tenantConfig);
-    await tenantConnection.initialize();
-
-    try {
-      // Run migrations or create tables
-      // For now, we'll use synchronize for simplicity (not recommended for production)
-      // In production, you should use migrations
-      await tenantConnection.synchronize();
-    } finally {
-      // Close the connection after setup
-      if (tenantConnection.isInitialized) {
-        await tenantConnection.destroy();
-      }
-    }
+    // Initialize auth tables for the tenant (production-ready SQL DDL)
+    await this.tenantAuthInitService.initializeTenantAuth(savedTenant.slug);
 
     return savedTenant;
   }
@@ -123,5 +106,22 @@ export class TenantsService implements OnModuleInit {
 
     // Delete tenant record using id
     await this.tenantRepository.delete(tenant.id);
+  }
+
+  /**
+   * Initialize auth tables for an existing tenant
+   * Useful for fixing tenants that were created before auth was implemented
+   */
+  async initializeAuth(slug: string): Promise<void> {
+    await this.findOne(slug); // Verify tenant exists
+    await this.tenantAuthInitService.initializeTenantAuth(slug);
+  }
+
+  /**
+   * Initialize auth tables for all existing tenants
+   * Useful for migration or fixing existing tenants
+   */
+  async initializeAllAuth(): Promise<void> {
+    await this.tenantAuthInitService.initializeAllTenantsAuth();
   }
 }

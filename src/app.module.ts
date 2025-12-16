@@ -10,6 +10,8 @@ import { TenantsModule } from '@/public/tenants/tenants.module';
 import { CatsModule } from '@/tenanted/cats/cats.module';
 import { publicOrmConfig } from './orm.config';
 import { DatabaseInitService } from './common/database-init.service';
+import { AuthModule as PublicAuthModule } from './modules/public/auth/auth.module';
+import { AuthModule as TenantedAuthModule } from './modules/tenanted/auth/auth.module';
 
 @Module({
   imports: [
@@ -33,11 +35,14 @@ import { DatabaseInitService } from './common/database-init.service';
       synchronize: false,
     }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN as any },
+      secret:
+        '8f2b5e4317f4e50d25df2d9bfe536d58a7dd7912fbdc6fb8fb32bdc19f3bbe4e',
+      signOptions: { expiresIn: '1h' },
       global: true,
     }),
     TenantsModule,
+    PublicAuthModule,
+    TenantedAuthModule,
     CatsModule,
   ],
   controllers: [AppController],
