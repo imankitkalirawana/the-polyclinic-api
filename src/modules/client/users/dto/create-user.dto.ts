@@ -1,4 +1,10 @@
-import { IsEmail, IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 import { Role } from 'src/common/enums/role.enum';
 import { Status } from 'src/common/enums/status.enum';
 
@@ -31,4 +37,3 @@ export class CreateUserDto {
   @IsOptional()
   image?: string;
 }
-

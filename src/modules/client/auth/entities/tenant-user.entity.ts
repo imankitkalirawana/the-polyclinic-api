@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Role } from '../../../../common/enums/role.enum';
+import { Role } from 'src/common/enums/role.enum';
 import { Session } from './session.entity';
 import { Status } from 'src/common/enums/status.enum';
 
