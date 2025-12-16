@@ -21,12 +21,12 @@ export class SessionCleanupService {
 
   async cleanupAllTenantSessions(): Promise<void> {
     const tenants = await this.tenantRepository.find();
-    
+
     for (const tenant of tenants) {
       try {
         const config = getTenantConnectionConfig(tenant.slug);
         const connection = new DataSource(config);
-        
+
         if (!connection.isInitialized) {
           await connection.initialize();
         }
@@ -39,15 +39,19 @@ export class SessionCleanupService {
           .where('expiresAt < :now', { now: new Date() })
           .execute();
 
-        console.log(`Cleaned up ${result.affected || 0} expired sessions for tenant ${tenant.slug}`);
+        console.log(
+          `Cleaned up ${result.affected || 0} expired sessions for tenant ${tenant.slug}`,
+        );
 
         if (connection.isInitialized) {
           await connection.destroy();
         }
       } catch (error) {
-        console.error(`Error cleaning up sessions for tenant ${tenant.slug}:`, error);
+        console.error(
+          `Error cleaning up sessions for tenant ${tenant.slug}:`,
+          error,
+        );
       }
     }
   }
 }
-

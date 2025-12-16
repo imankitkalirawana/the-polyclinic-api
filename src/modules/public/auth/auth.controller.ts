@@ -13,7 +13,10 @@ import { RegisterDto } from './dto/register.dto';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { BearerAuthGuard } from './guards/bearer-auth.guard';
-import { CurrentUser, CurrentUserPayload } from './decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from './decorators/current-user.decorator';
 
 @Controller('auth/public')
 export class AuthController {
@@ -50,4 +53,3 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 }
-

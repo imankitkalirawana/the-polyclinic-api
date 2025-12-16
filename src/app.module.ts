@@ -12,6 +12,8 @@ import { publicOrmConfig } from './orm.config';
 import { DatabaseInitService } from './common/database-init.service';
 import { AuthModule as PublicAuthModule } from './modules/public/auth/auth.module';
 import { AuthModule as TenantedAuthModule } from './modules/tenanted/auth/auth.module';
+import { UsersModule as PublicUsersModule } from './modules/public/users/users.module';
+import { UsersModule as TenantedUsersModule } from './modules/tenanted/users/users.module';
 
 @Module({
   imports: [
@@ -42,7 +44,9 @@ import { AuthModule as TenantedAuthModule } from './modules/tenanted/auth/auth.m
     }),
     TenantsModule,
     PublicAuthModule,
+    PublicUsersModule,
     TenantedAuthModule,
+    TenantedUsersModule, // Must be after TenantedAuthModule for strategy registration
     CatsModule,
   ],
   controllers: [AppController],

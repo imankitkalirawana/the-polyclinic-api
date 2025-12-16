@@ -1,8 +1,7 @@
-import { Injectable, UnauthorizedException, Scope } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
-import { Inject } from '@nestjs/common';
-import { REQUEST } from '@nestjs/core';
+import { ModuleRef, ContextIdFactory } from '@nestjs/core';
 import { Request } from 'express';
 import { DataSource } from 'typeorm';
 import { CONNECTION } from '../../../tenancy/tenancy.symbols';
@@ -18,42 +17,60 @@ export interface JwtPayload {
   tenantSlug: string;
 }
 
-@Injectable({ scope: Scope.REQUEST })
+@Injectable()
 export class BearerStrategy extends PassportStrategy(
   Strategy,
   'tenant-bearer',
 ) {
-  constructor(
-    @Inject(REQUEST) private request: Request,
-    @Inject(CONNECTION) private connection: DataSource | null,
-  ) {
+  constructor(private moduleRef: ModuleRef) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey:
         '8f2b5e4317f4e50d25df2d9bfe536d58a7dd7912fbdc6fb8fb32bdc19f3bbe4e',
+      passReqToCallback: true,
     });
   }
 
-  async validate(payload: JwtPayload) {
-    if (payload.type !== 'tenant') {
-      throw new UnauthorizedException('Invalid token type');
+  async validate(request: Request, payload: any) {
+    // Check if token has the required type field
+    if (!payload.type || payload.type !== 'tenant') {
+      throw new UnauthorizedException(
+        'Invalid token type. This endpoint requires a tenant authentication token.',
+      );
     }
 
-    if (!this.connection) {
+    // Type assertion after validation
+    const tenantPayload = payload as JwtPayload;
+
+    // Get context ID from request and resolve CONNECTION
+    const contextId = ContextIdFactory.getByRequest(request);
+    const connection = await this.moduleRef.resolve<DataSource | null>(
+      CONNECTION,
+      contextId,
+      { strict: false },
+    );
+
+    if (!connection) {
       throw new UnauthorizedException('Tenant connection not available');
     }
 
-    const tenantSlug = (this.request as any).tenantSlug;
-    if (payload.tenantSlug !== tenantSlug) {
+    const tenantSlug = (request as any).tenantSlug;
+    if (!tenantSlug) {
+      throw new UnauthorizedException(
+        'Tenant slug is required. Please include x-tenant-slug header.',
+      );
+    }
+
+    if (tenantPayload.tenantSlug !== tenantSlug) {
       throw new UnauthorizedException('Tenant mismatch');
     }
 
-    const sessionRepository = this.connection.getRepository(Session);
-    const userRepository = this.connection.getRepository(TenantUser);
+    const sessionRepository = connection.getRepository(Session);
+    const userRepository = connection.getRepository(TenantUser);
 
     const session = await sessionRepository.findOne({
-      where: { id: payload.sessionId },
+      where: { id: tenantPayload.sessionId },
       relations: ['user'],
     });
 
@@ -68,7 +85,7 @@ export class BearerStrategy extends PassportStrategy(
     }
 
     const user = await userRepository.findOne({
-      where: { id: payload.userId },
+      where: { id: tenantPayload.userId },
     });
 
     if (!user) {
