@@ -10,6 +10,7 @@ import { PublicUser } from './entities/public-user.entity';
 import { Session } from './entities/session.entity';
 import { Otp } from './entities/otp.entity';
 import { RolesGuard } from './guards/roles.guard';
+import { FieldRestrictionsGuard } from './guards/field-restrictions.guard';
 import { SessionCleanupService } from './session-cleanup.service';
 
 @Module({
@@ -23,7 +24,13 @@ import { SessionCleanupService } from './session-cleanup.service';
     ScheduleModule.forRoot(),
   ],
   controllers: [AuthController],
-  providers: [AuthService, BearerStrategy, RolesGuard, SessionCleanupService],
-  exports: [AuthService, BearerStrategy, RolesGuard],
+  providers: [
+    AuthService,
+    BearerStrategy,
+    RolesGuard,
+    FieldRestrictionsGuard,
+    SessionCleanupService,
+  ],
+  exports: [AuthService, BearerStrategy, RolesGuard, FieldRestrictionsGuard],
 })
 export class AuthModule {}

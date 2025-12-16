@@ -7,14 +7,12 @@ import {
   Param,
   Delete,
   UseGuards,
-  Query,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { QueryUserDto } from './dto/query-user.dto';
 import { BearerAuthGuard } from '../auth/guards/bearer-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -42,8 +40,8 @@ export class UsersController {
 
   @Get()
   @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
-  async findAll(@Query() queryDto: QueryUserDto) {
-    return this.usersService.findAll(queryDto);
+  async findAll() {
+    return this.usersService.findAll();
   }
 
   @Get(':id')

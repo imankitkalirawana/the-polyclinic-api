@@ -31,4 +31,3 @@ export class UpdateUserDto {
   @IsOptional()
   image?: string;
 }
-

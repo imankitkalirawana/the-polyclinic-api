@@ -17,11 +17,13 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { BearerAuthGuard } from '../auth/guards/bearer-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { FieldRestrictionsGuard } from '../auth/guards/field-restrictions.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { RestrictFields } from '../auth/decorators/restrict-fields.decorator';
 import { Role } from 'src/common/enums/role.enum';
 
 @Controller('users')
-@UseGuards(BearerAuthGuard, RolesGuard)
+@UseGuards(BearerAuthGuard, RolesGuard, FieldRestrictionsGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -45,6 +47,7 @@ export class UsersController {
 
   @Patch(':id')
   @Roles(Role.SUPERADMIN, Role.MODERATOR)
+  @RestrictFields({ role: Role.MODERATOR, fields: ['email', 'role'] })
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }

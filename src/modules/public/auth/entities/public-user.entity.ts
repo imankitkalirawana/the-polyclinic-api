@@ -26,7 +26,7 @@ export class PublicUser {
   @Column({
     type: 'enum',
     enum: SystemRole,
-    default: SystemRole.ops,
+    default: SystemRole.OPS,
   })
   role: SystemRole;
 

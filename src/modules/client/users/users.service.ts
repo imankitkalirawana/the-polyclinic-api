@@ -13,9 +13,6 @@ import * as bcrypt from 'bcryptjs';
 import { TenantUser } from '../auth/entities/tenant-user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { QueryUserDto } from './dto/query-user.dto';
-import { Role } from 'src/common/enums/role.enum';
-import { Status } from 'src/common/enums/status.enum';
 import { CONNECTION } from '../../tenancy/tenancy.symbols';
 import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
 
@@ -87,8 +84,8 @@ export class UsersService {
       email: createUserDto.email,
       password: hashedPassword,
       name: createUserDto.name,
-      role: createUserDto.role || Role.PATIENT,
-      status: createUserDto.status || Status.ACTIVE,
+      role: createUserDto.role,
+      status: createUserDto.status,
       phone: createUserDto.phone,
       image: createUserDto.image,
     });
@@ -101,39 +98,16 @@ export class UsersService {
     return savedUser;
   }
 
-  async findAll(
-    queryDto: QueryUserDto,
-  ): Promise<Omit<TenantUser, 'password'>[]> {
+  async findAll(): Promise<Omit<TenantUser, 'password'>[]> {
     await this.ensureTablesExist();
     const userRepository = this.getUserRepository();
-    const { search, role, status } = queryDto;
-
-    const queryBuilder = userRepository.createQueryBuilder('user');
-
-    if (search) {
-      queryBuilder.where(
-        '(user.email LIKE :search OR user.name LIKE :search OR user.phone LIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    if (role) {
-      queryBuilder.andWhere('user.role = :role', { role });
-    }
-
-    if (status) {
-      queryBuilder.andWhere('user.status = :status', { status });
-    }
-
-    const data = await queryBuilder.orderBy('user.createdAt', 'DESC').getMany();
+    const users = await userRepository.find();
 
     // Remove passwords from response
-    const usersWithoutPasswords = data.map((user) => {
+    return users.map((user) => {
       const { password, ...userWithoutPassword } = user;
       return userWithoutPassword;
     });
-
-    return usersWithoutPasswords;
   }
 
   async findOne(id: string): Promise<Omit<TenantUser, 'password'>> {

@@ -10,7 +10,6 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-import { SystemRole } from 'src/common/enums/role.enum';
 import { JwtPayload } from './strategies/bearer.strategy';
 
 @Injectable()
@@ -141,7 +140,7 @@ export class AuthService {
       email: registerDto.email,
       password: hashedPassword,
       name: registerDto.name,
-      role: registerDto.role || SystemRole.ops,
+      role: registerDto.role,
     });
 
     const savedUser = await userRepository.save(user);

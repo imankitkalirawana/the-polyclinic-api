@@ -11,7 +11,6 @@ import { PublicUser } from '../auth/entities/public-user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
-import { SystemRole } from 'src/common/enums/role.enum';
 
 @Injectable()
 export class UsersService {
@@ -40,7 +39,7 @@ export class UsersService {
       email: createUserDto.email,
       password: hashedPassword,
       name: createUserDto.name,
-      role: createUserDto.role || SystemRole.ops,
+      role: createUserDto.role,
     });
 
     const savedUser = await this.userRepository.save(user);

@@ -1,4 +1,10 @@
-import { IsEmail, IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 import { SystemRole } from 'src/common/enums/role.enum';
 
 export class CreateUserDto {
@@ -18,4 +24,3 @@ export class CreateUserDto {
   @IsOptional()
   role?: SystemRole;
 }
-
