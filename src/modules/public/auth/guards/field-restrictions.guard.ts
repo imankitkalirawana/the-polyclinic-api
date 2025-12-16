@@ -28,18 +28,29 @@ export class FieldRestrictionsGuard implements CanActivate {
       return true;
     }
 
-    // Find restrictions for the current user's role
-    const userRestrictions = restrictions.find(
-      (restriction) => restriction.role === user.role,
-    );
+    // Find all restrictions that apply to the current user's role
+    const applicableRestrictions = restrictions.filter((restriction) => {
+      // Check if single role matches
+      if (Array.isArray(restriction.role)) {
+        return restriction.role.includes(user.role);
+      }
+      // Check if single role matches
+      return restriction.role === user.role;
+    });
 
     // If no restrictions for this role, allow
-    if (!userRestrictions) {
+    if (applicableRestrictions.length === 0) {
       return true;
     }
 
+    // Collect all restricted fields from all applicable restrictions
+    const restrictedFields = new Set<string>();
+    applicableRestrictions.forEach((restriction) => {
+      restriction.fields.forEach((field) => restrictedFields.add(field));
+    });
+
     // Silently filter out restricted fields from the request body
-    userRestrictions.fields.forEach((field) => {
+    restrictedFields.forEach((field) => {
       delete body[field];
     });
 

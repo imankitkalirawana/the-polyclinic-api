@@ -47,7 +47,10 @@ export class UsersController {
 
   @Patch(':id')
   @Roles(Role.SUPERADMIN, Role.MODERATOR)
-  @RestrictFields({ role: Role.MODERATOR, fields: ['email', 'role'] })
+  @RestrictFields({
+    role: [Role.MODERATOR, Role.OPS],
+    fields: ['email', 'role'],
+  })
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
