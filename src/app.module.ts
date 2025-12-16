@@ -7,13 +7,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Tenant } from '@/public/tenants/entities/tenant.entity';
 import { TenantsModule } from '@/public/tenants/tenants.module';
-import { CatsModule } from '@/tenanted/cats/cats.module';
+import { CatsModule } from '@/client/cats/cats.module';
 import { publicOrmConfig } from './orm.config';
 import { DatabaseInitService } from './common/database-init.service';
 import { AuthModule as PublicAuthModule } from './modules/public/auth/auth.module';
-import { AuthModule as TenantedAuthModule } from './modules/tenanted/auth/auth.module';
+import { AuthModule as TenantedAuthModule } from './modules/client/auth/auth.module';
 import { UsersModule as PublicUsersModule } from './modules/public/users/users.module';
-import { UsersModule as TenantedUsersModule } from './modules/tenanted/users/users.module';
+import { UsersModule as TenantedUsersModule } from './modules/client/users/users.module';
 
 @Module({
   imports: [

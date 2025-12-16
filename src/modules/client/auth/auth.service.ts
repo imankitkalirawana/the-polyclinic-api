@@ -125,7 +125,7 @@ export class AuthService {
 
     // TODO: Send OTP via email/SMS service
     // For now, we'll log it (remove in production)
-    this.logger.log(`OTP for ${requestOtpDto.email}: ${code}`);
+    this.logger.log(`OTP for ${requestOtpDto.email}`);
 
     return { message: 'OTP sent successfully' };
   }

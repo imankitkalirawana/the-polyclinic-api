@@ -11,7 +11,7 @@ import { CatsService } from './cats.service';
 import { CreateCatDto } from './dto/create-cat.dto';
 import { UpdateCatDto } from './dto/update-cat.dto';
 
-@Controller('cats')
+@Controller('client/cats')
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}
 

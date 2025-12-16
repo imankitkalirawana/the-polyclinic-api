@@ -24,7 +24,7 @@ import {
   CurrentUserPayload,
 } from '../auth/decorators/current-user.decorator';
 
-@Controller('users')
+@Controller('client/users')
 @UseGuards(BearerAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

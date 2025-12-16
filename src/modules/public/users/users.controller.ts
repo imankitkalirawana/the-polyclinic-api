@@ -18,9 +18,9 @@ import { QueryUserDto } from './dto/query-user.dto';
 import { BearerAuthGuard } from '../auth/guards/bearer-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { SystemRole, Role } from 'src/common/enums/role.enum';
+import { Role } from 'src/common/enums/role.enum';
 
-@Controller('users/public')
+@Controller('users')
 @UseGuards(BearerAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -56,4 +56,3 @@ export class UsersController {
     await this.usersService.remove(id);
   }
 }
-

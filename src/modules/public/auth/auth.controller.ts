@@ -18,7 +18,7 @@ import {
   CurrentUserPayload,
 } from './decorators/current-user.decorator';
 
-@Controller('auth/public')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
