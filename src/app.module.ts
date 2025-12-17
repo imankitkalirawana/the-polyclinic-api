@@ -14,6 +14,7 @@ import { UsersModule as PublicUsersModule } from './modules/public/users/users.m
 import { UsersModule as TenantedUsersModule } from './modules/client/users/users.module';
 import { PatientsModule } from './modules/client/patients/patients.module';
 import { DoctorsModule } from './modules/client/doctors/doctors.module';
+import { QueueModule } from './modules/client/appointments/queue/queue.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { DoctorsModule } from './modules/client/doctors/doctors.module';
     TenantedUsersModule,
     PatientsModule,
     DoctorsModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [

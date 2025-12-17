@@ -44,6 +44,8 @@ export class BearerStrategy extends PassportStrategy(
 
     // Get context ID from request and resolve CONNECTION
     const contextId = ContextIdFactory.getByRequest(request);
+    // Make the current request available for request-scoped providers
+    this.moduleRef.registerRequestByContextId(request, contextId);
     const connection = await this.moduleRef.resolve<DataSource | null>(
       CONNECTION,
       contextId,
