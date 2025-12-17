@@ -216,9 +216,7 @@ export class AuthService {
     return { user: savedUser, token };
   }
 
-  async login(
-    loginDto: LoginDto,
-  ): Promise<{ user: TenantUser; token: string }> {
+  async login(loginDto: LoginDto) {
     await this.ensureTablesExist();
     const userRepository = this.getUserRepository();
     const user = await userRepository.findOne({
@@ -241,7 +239,7 @@ export class AuthService {
     // Create session
     const token = await this.createSession(user);
 
-    return { user, token };
+    return { token };
   }
 
   async logout(sessionId: string): Promise<void> {

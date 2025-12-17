@@ -21,14 +21,16 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '../auth/decorators/current-user.decorator';
+import { RestrictFields } from '@/public/auth/decorators/restrict-fields.decorator';
+import { FieldRestrictionsGuard } from '@/public/auth/guards/field-restrictions.guard';
 
 @Controller('client/users')
-@UseGuards(BearerAuthGuard, RolesGuard)
+@UseGuards(BearerAuthGuard, RolesGuard, FieldRestrictionsGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.DOCTOR)
+  @Roles(Role.ADMIN)
   async create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
@@ -52,6 +54,10 @@ export class UsersController {
 
   @Patch(':id')
   @Roles(Role.ADMIN, Role.DOCTOR)
+  @RestrictFields({
+    role: [Role.DOCTOR],
+    fields: ['email', 'role'],
+  })
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
