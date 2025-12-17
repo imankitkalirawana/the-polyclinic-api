@@ -1,4 +1,6 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateQueueDto } from './create-queue.dto';
 
-export class UpdateQueueDto extends PartialType(CreateQueueDto) {}
+export class UpdateQueueDto extends PartialType(
+  OmitType(CreateQueueDto, ['patientId']),
+) {}

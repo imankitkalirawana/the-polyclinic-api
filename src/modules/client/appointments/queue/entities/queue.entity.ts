@@ -7,9 +7,16 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Patient } from '../../../patients/entities/patient.entity';
-import { Doctor } from '../../../doctors/entities/doctor.entity';
-import { TenantUser } from '../../../auth/entities/tenant-user.entity';
+import { Patient } from '@/client/patients/entities/patient.entity';
+import { Doctor } from '@/client/doctors/entities/doctor.entity';
+import { TenantUser } from '@/client/auth/entities/tenant-user.entity';
+
+enum QueueStatus {
+  BOOKED = 'BOOKED',
+  PENDING = 'PENDING',
+  CANCELLED = 'CANCELLED',
+  COMPLETED = 'COMPLETED',
+}
 
 @Entity('appointment_queue')
 export class Queue {
@@ -24,6 +31,9 @@ export class Queue {
   })
   @JoinColumn({ name: 'patientId' })
   patient: Patient;
+
+  @Column({ type: 'enum', enum: QueueStatus, default: QueueStatus.BOOKED })
+  status: QueueStatus;
 
   @Column({ type: 'uuid' })
   doctorId: string;

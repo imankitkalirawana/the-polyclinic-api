@@ -21,6 +21,7 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '../auth/decorators/current-user.decorator';
+import { AllowFields } from '@/public/auth/decorators/allow-fields.decorator';
 import { RestrictFields } from '@/public/auth/decorators/restrict-fields.decorator';
 import { FieldRestrictionsGuard } from '@/public/auth/guards/field-restrictions.guard';
 
@@ -54,6 +55,10 @@ export class UsersController {
 
   @Patch(':id')
   @Roles(Role.ADMIN, Role.DOCTOR)
+  @AllowFields({
+    role: [Role.DOCTOR],
+    fields: ['name'],
+  })
   @RestrictFields({
     role: [Role.DOCTOR],
     fields: ['email', 'role'],

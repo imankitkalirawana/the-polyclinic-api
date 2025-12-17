@@ -4,19 +4,30 @@ import {
   RESTRICT_FIELDS_KEY,
   FieldRestriction,
 } from '../decorators/restrict-fields.decorator';
+import {
+  ALLOW_FIELDS_KEY,
+  FieldAllowance,
+} from '../decorators/allow-fields.decorator';
 
 @Injectable()
 export class FieldRestrictionsGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    const allowances = this.reflector.getAllAndOverride<FieldAllowance[]>(
+      ALLOW_FIELDS_KEY,
+      [context.getHandler(), context.getClass()],
+    );
     const restrictions = this.reflector.getAllAndOverride<FieldRestriction[]>(
       RESTRICT_FIELDS_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    // If no restrictions are defined, allow the request
-    if (!restrictions || restrictions.length === 0) {
+    // If nothing to enforce, allow the request
+    if (
+      (!allowances || allowances.length === 0) &&
+      (!restrictions || restrictions.length === 0)
+    ) {
       return true;
     }
 
@@ -28,31 +39,49 @@ export class FieldRestrictionsGuard implements CanActivate {
       return true;
     }
 
-    // Find all restrictions that apply to the current user's role
-    const applicableRestrictions = restrictions.filter((restriction) => {
-      // Check if single role matches
-      if (Array.isArray(restriction.role)) {
-        return restriction.role.includes(user.role);
+    // Apply allowed fields first (if any)
+    const applicableAllowances = (allowances ?? []).filter((allowance) => {
+      if (Array.isArray(allowance.role)) {
+        return allowance.role.includes(user.role);
       }
-      // Check if single role matches
-      return restriction.role === user.role;
+      return allowance.role === user.role;
     });
 
-    // If no restrictions for this role, allow
-    if (applicableRestrictions.length === 0) {
-      return true;
+    if (applicableAllowances.length > 0) {
+      const allowedFields = new Set<string>();
+      applicableAllowances.forEach((allowance) => {
+        allowance.fields.forEach((field) => allowedFields.add(field));
+      });
+
+      Object.keys(body).forEach((field) => {
+        if (!allowedFields.has(field)) {
+          delete body[field];
+        }
+      });
     }
 
-    // Collect all restricted fields from all applicable restrictions
-    const restrictedFields = new Set<string>();
-    applicableRestrictions.forEach((restriction) => {
-      restriction.fields.forEach((field) => restrictedFields.add(field));
-    });
+    // Find all restrictions that apply to the current user's role
+    const applicableRestrictions = (restrictions ?? []).filter(
+      (restriction) => {
+        if (Array.isArray(restriction.role)) {
+          return restriction.role.includes(user.role);
+        }
+        return restriction.role === user.role;
+      },
+    );
 
-    // Silently filter out restricted fields from the request body
-    restrictedFields.forEach((field) => {
-      delete body[field];
-    });
+    if (applicableRestrictions.length > 0) {
+      // Collect all restricted fields from all applicable restrictions
+      const restrictedFields = new Set<string>();
+      applicableRestrictions.forEach((restriction) => {
+        restriction.fields.forEach((field) => restrictedFields.add(field));
+      });
+
+      // Silently filter out restricted fields from the request body
+      restrictedFields.forEach((field) => {
+        delete body[field];
+      });
+    }
 
     return true;
   }

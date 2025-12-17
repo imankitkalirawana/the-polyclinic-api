@@ -4,14 +4,14 @@ import { DataSource, MoreThanOrEqual } from 'typeorm';
 import { Request } from 'express';
 import { CreateQueueDto } from './dto/create-queue.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
-import { CurrentUserPayload } from '../../auth/decorators/current-user.decorator';
-import { BaseTenantService } from '../../../tenancy/base-tenant.service';
-import { CONNECTION } from '../../../tenancy/tenancy.symbols';
-import { TenantAuthInitService } from '../../../tenancy/tenant-auth-init.service';
+import { CurrentUserPayload } from '@/client/auth/decorators/current-user.decorator';
+import { BaseTenantService } from '@/tenancy/base-tenant.service';
+import { CONNECTION } from '@/tenancy/tenancy.symbols';
+import { TenantAuthInitService } from '@/tenancy/tenant-auth-init.service';
 import { Queue } from './entities/queue.entity';
-import { Patient } from '../../patients/entities/patient.entity';
-import { Doctor } from '../../doctors/entities/doctor.entity';
-import { TenantUser } from '../../auth/entities/tenant-user.entity';
+import { Patient } from '@/client/patients/entities/patient.entity';
+import { Doctor } from '@/client/doctors/entities/doctor.entity';
+import { TenantUser } from '@/client/auth/entities/tenant-user.entity';
 
 const appointmentQueueSelect = {
   id: true,
@@ -159,6 +159,7 @@ export class QueueService extends BaseTenantService {
     await this.ensureTablesExist();
     const qb = this.getQueueRepository().findOne({
       where: { id },
+      relations: ['patient', 'doctor', 'bookedByUser'],
       select: appointmentQueueSelect,
     });
 
@@ -172,19 +173,6 @@ export class QueueService extends BaseTenantService {
     const queue = await queueRepository.findOne({ where: { id } });
     if (!queue) {
       throw new NotFoundException(`Queue with ID ${id} not found`);
-    }
-
-    if (updateQueueDto.patientId) {
-      const patientRepository = this.getPatientRepository();
-      const patient = await patientRepository.findOne({
-        where: { id: updateQueueDto.patientId },
-      });
-
-      if (!patient) {
-        throw new NotFoundException(
-          `Patient with ID ${updateQueueDto.patientId} not found`,
-        );
-      }
     }
 
     if (updateQueueDto.doctorId) {
