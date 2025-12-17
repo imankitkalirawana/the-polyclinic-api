@@ -48,7 +48,7 @@ export class PatientsService extends BaseTenantService {
     return this.getRepository(TenantUser);
   }
 
-  async create(createPatientDto: CreatePatientDto): Promise<Patient> {
+  async create(createPatientDto: CreatePatientDto) {
     await this.ensureTablesExist();
     const patientRepository = this.getPatientRepository();
     const userRepository = this.getUserRepository();
@@ -85,19 +85,24 @@ export class PatientsService extends BaseTenantService {
     const savedPatient = await patientRepository.save(patient);
 
     // Load user relation
-    const patientWithUser = await patientRepository.findOne({
-      where: { id: savedPatient.id },
-      relations: ['user'],
-    });
+    const patientWithUser = await patientRepository
+      .createQueryBuilder('patient')
+      .leftJoin('patient.user', 'user')
+      .select([...patientSelect, ...userSelect])
+      .where('patient.id = :id', { id: savedPatient.id })
+      .getRawOne();
 
     if (!patientWithUser) {
       throw new NotFoundException('Failed to retrieve created patient');
     }
 
-    return patientWithUser;
+    return {
+      message: 'Patient created successfully',
+      data: patientWithUser,
+    };
   }
 
-  async findAll(): Promise<Patient[]> {
+  async findAll() {
     await this.ensureTablesExist();
     const patientRepository = this.getPatientRepository();
     return patientRepository
@@ -107,7 +112,7 @@ export class PatientsService extends BaseTenantService {
       .getRawMany();
   }
 
-  async findOne(id: string): Promise<Patient> {
+  async findOne(id: string) {
     await this.ensureTablesExist();
     const patientRepository = this.getPatientRepository();
 
@@ -124,7 +129,7 @@ export class PatientsService extends BaseTenantService {
     return patient;
   }
 
-  async findByUserId(userId: string): Promise<Patient> {
+  async findByUserId(userId: string) {
     await this.ensureTablesExist();
     const patientRepository = this.getPatientRepository();
 
@@ -142,19 +147,14 @@ export class PatientsService extends BaseTenantService {
     return patient;
   }
 
-  async update(
-    id: string,
-    updatePatientDto: UpdatePatientDto,
-  ): Promise<Patient> {
+  async update(id: string, updatePatientDto: UpdatePatientDto) {
     await this.ensureTablesExist();
     const patientRepository = this.getPatientRepository();
 
-    const patient = await patientRepository
-      .createQueryBuilder('patient')
-      .leftJoin('patient.user', 'user')
-      .select([...patientSelect, ...userSelect])
-      .where('patient.id = :id', { id })
-      .getRawOne();
+    const patient = await patientRepository.findOne({
+      where: { id },
+      relations: ['user'],
+    });
 
     if (!patient) {
       throw new NotFoundException(`Patient with ID ${id} not found`);
@@ -188,33 +188,39 @@ export class PatientsService extends BaseTenantService {
     Object.assign(patient, updatePatientDto);
     const updatedPatient = await patientRepository.save(patient);
 
-    const patientWithUser = await patientRepository.findOne({
-      where: { id: updatedPatient.id },
-      relations: ['user'],
-    });
+    const patientWithUser = await patientRepository
+      .createQueryBuilder('patient')
+      .leftJoin('patient.user', 'user')
+      .select([...patientSelect, ...userSelect])
+      .where('patient.id = :id', { id: updatedPatient.id })
+      .getRawOne();
 
     if (!patientWithUser) {
       throw new NotFoundException('Failed to retrieve updated patient');
     }
 
-    return patientWithUser;
+    return {
+      message: 'Patient updated successfully',
+      data: patientWithUser,
+    };
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string) {
     await this.ensureTablesExist();
     const patientRepository = this.getPatientRepository();
 
-    const patient = await patientRepository
-      .createQueryBuilder('patient')
-      .leftJoin('patient.user', 'user')
-      .select([...patientSelect, ...userSelect])
-      .where('patient.id = :id', { id })
-      .getRawOne();
+    const patient = await patientRepository.findOne({
+      where: { id },
+    });
 
     if (!patient) {
       throw new NotFoundException(`Patient with ID ${id} not found`);
     }
 
     await patientRepository.remove(patient);
+
+    return {
+      message: 'Patient deleted successfully',
+    };
   }
 }

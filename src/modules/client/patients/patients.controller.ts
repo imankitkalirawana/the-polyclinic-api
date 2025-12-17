@@ -7,8 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  HttpCode,
-  HttpStatus,
 } from '@nestjs/common';
 import { PatientsService } from './patients.service';
 import { CreatePatientDto } from './dto/create-patient.dto';
@@ -61,8 +59,7 @@ export class PatientsController {
 
   @Delete(':id')
   @Roles(Role.ADMIN)
-  @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string) {
-    await this.patientsService.remove(id);
+    return await this.patientsService.remove(id);
   }
 }
