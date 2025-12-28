@@ -13,6 +13,7 @@ import { AuthModule as TenantedAuthModule } from './modules/client/auth/auth.mod
 import { UsersModule as PublicUsersModule } from './modules/public/users/users.module';
 import { UsersModule as TenantedUsersModule } from './modules/client/users/users.module';
 import { PatientsModule } from './modules/client/patients/patients.module';
+import { PaymentsModule } from './modules/client/payments/payments.module';
 import { DoctorsModule } from './modules/client/doctors/doctors.module';
 import { QueueModule } from './modules/client/appointments/queue/queue.module';
 
@@ -48,6 +49,7 @@ import { QueueModule } from './modules/client/appointments/queue/queue.module';
     PatientsModule,
     DoctorsModule,
     QueueModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [

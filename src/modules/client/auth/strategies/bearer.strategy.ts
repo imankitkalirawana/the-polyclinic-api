@@ -1,10 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
-import { ModuleRef, ContextIdFactory } from '@nestjs/core';
 import { Request } from 'express';
-import { DataSource } from 'typeorm';
-import { CONNECTION } from '../../../tenancy/tenancy.symbols';
+import { getTenantConnection } from '../../../tenancy/connection-pool';
 import { Session } from '../entities/session.entity';
 import { TenantUser } from '../entities/tenant-user.entity';
 
@@ -22,7 +20,7 @@ export class BearerStrategy extends PassportStrategy(
   Strategy,
   'tenant-bearer',
 ) {
-  constructor(private moduleRef: ModuleRef) {
+  constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -42,20 +40,6 @@ export class BearerStrategy extends PassportStrategy(
     // Type assertion after validation
     const tenantPayload = payload as JwtPayload;
 
-    // Get context ID from request and resolve CONNECTION
-    const contextId = ContextIdFactory.getByRequest(request);
-    // Make the current request available for request-scoped providers
-    this.moduleRef.registerRequestByContextId(request, contextId);
-    const connection = await this.moduleRef.resolve<DataSource | null>(
-      CONNECTION,
-      contextId,
-      { strict: false },
-    );
-
-    if (!connection) {
-      throw new UnauthorizedException('Tenant connection not available');
-    }
-
     const tenantSlug = (request as any).tenantSlug;
     if (!tenantSlug) {
       throw new UnauthorizedException(
@@ -66,6 +50,9 @@ export class BearerStrategy extends PassportStrategy(
     if (tenantPayload.tenantSlug !== tenantSlug) {
       throw new UnauthorizedException('Tenant mismatch');
     }
+
+    // Get or create connection for this tenant
+    const connection = await getTenantConnection(tenantSlug);
 
     const sessionRepository = connection.getRepository(Session);
     const userRepository = connection.getRepository(TenantUser);

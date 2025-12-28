@@ -2,12 +2,9 @@ import { Module, Scope, OnModuleDestroy } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { DataSource } from 'typeorm';
 import { CONNECTION } from './tenancy.symbols';
-import { getTenantConnectionConfig } from '../../tenant-orm.config';
+import { getTenantConnection, closeAllConnections } from './connection-pool';
 import { TenantMigrationService } from './services/tenant-migration.service';
 import { TenantAuthInitService } from './tenant-auth-init.service';
-
-// Connection pool to reuse connections
-const connections = new Map<string, DataSource>();
 
 const connectionFactory = {
   provide: CONNECTION,
@@ -19,24 +16,7 @@ const connectionFactory = {
       return null;
     }
 
-    // Check if connection already exists
-    if (connections.has(tenantSlug)) {
-      const existingConnection = connections.get(tenantSlug);
-      if (existingConnection?.isInitialized) {
-        return existingConnection;
-      }
-    }
-
-    // Create new connection
-    const config = getTenantConnectionConfig(tenantSlug);
-    const connection = new DataSource(config);
-
-    if (!connection.isInitialized) {
-      await connection.initialize();
-    }
-
-    connections.set(tenantSlug, connection);
-    return connection;
+    return await getTenantConnection(tenantSlug);
   },
   inject: [REQUEST],
 };
@@ -47,12 +27,6 @@ const connectionFactory = {
 })
 export class TenancyModule implements OnModuleDestroy {
   async onModuleDestroy() {
-    // Close all connections on module destroy
-    for (const [tenantSlug, connection] of connections.entries()) {
-      if (connection.isInitialized) {
-        await connection.destroy();
-      }
-      connections.delete(tenantSlug);
-    }
+    await closeAllConnections();
   }
 }
