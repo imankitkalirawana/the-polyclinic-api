@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  Res,
 } from '@nestjs/common';
 import { QueueService } from './queue.service';
 import { CreateQueueDto } from './dto/create-queue.dto';
@@ -24,6 +25,7 @@ import {
 import { CompleteQueueDto } from './dto/compelete-queue.dto';
 import { ApiResponse } from 'src/common/response-wrapper';
 import { VerifyPaymentDto } from '@/client/payments/dto/verify-payment.dto';
+import { Response } from 'express';
 
 @Controller('client/appointments/queue')
 @UseGuards(BearerAuthGuard, RolesGuard, FieldRestrictionsGuard)
@@ -109,5 +111,19 @@ export class QueueController {
       completeQueueDto,
       user,
     );
+  }
+
+  @Get('receipt/:id')
+  async appointmentReceiptPdf(@Param('id') id: string, @Res() res: Response) {
+    const { pdf, metaData } = await this.queueService.appointmentReceiptPdf(id);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename=${metaData.filename}`,
+      'Content-Length': pdf.length,
+      'Content-Title': metaData.title,
+    });
+
+    res.end(pdf);
   }
 }

@@ -24,7 +24,7 @@ import { Queue, QueueStatus } from './entities/queue.entity';
 import { PaymentMode } from './enums/queue.enum';
 import { Doctor } from '@/client/doctors/entities/doctor.entity';
 import { ApiResponse } from 'src/common/response-wrapper';
-import { formatQueue } from './queue.helper';
+import { appointmentConfirmationTemplate, formatQueue } from './queue.helper';
 import { CompleteQueueDto } from './dto/compelete-queue.dto';
 import { PaymentsService } from '@/client/payments/payments.service';
 import {
@@ -36,6 +36,7 @@ import {
 import { RazorpayService } from '@/client/payments/razorpay.service';
 import { VerifyPaymentDto } from '@/client/payments/dto/verify-payment.dto';
 import { Role } from 'src/common/enums/role.enum';
+import { PdfService } from '@/client/pdf/pdf.service';
 
 const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
 const todayEnd = new Date(new Date().setHours(23, 59, 59, 999));
@@ -57,6 +58,7 @@ export class QueueService extends BaseTenantService {
     tenantAuthInitService: TenantAuthInitService,
     private readonly paymentsService: PaymentsService,
     private readonly razorpayService: RazorpayService,
+    private readonly pdfService: PdfService,
   ) {
     super(request, connection, tenantAuthInitService, QueueService.name);
   }
@@ -446,5 +448,33 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     return ApiResponse.success(null, 'Appointment completed successfully');
+  }
+
+  async appointmentReceiptPdf(id: string) {
+    await this.ensureTablesExist();
+
+    const queue = await this.getRepository(Queue).findOne({
+      where: { id },
+      relations: queueRelations,
+    });
+
+    if (!queue) {
+      throw new NotFoundException('Queue not found');
+    }
+
+    const html = appointmentConfirmationTemplate({
+      ...queue,
+      id: queue.id.slice(-6).toUpperCase(),
+    });
+
+    const pdf = await this.pdfService.htmlToPdf(html, 'A6');
+
+    return {
+      pdf,
+      metaData: {
+        title: 'Appointment Receipt',
+        filename: `${queue.patient.user.name.replace(' ', '_')}_${queue.sequenceNumber}.pdf`,
+      },
+    };
   }
 }
