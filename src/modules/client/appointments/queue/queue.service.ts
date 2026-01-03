@@ -347,7 +347,7 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     return ApiResponse.success(
-      null,
+      queue,
       `${queue.patient.user.name} has been called`,
     );
   }

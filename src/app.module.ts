@@ -16,6 +16,12 @@ import { PatientsModule } from './modules/client/patients/patients.module';
 import { PaymentsModule } from './modules/client/payments/payments.module';
 import { DoctorsModule } from './modules/client/doctors/doctors.module';
 import { QueueModule } from './modules/client/appointments/queue/queue.module';
+import {
+  StandardResponseModule,
+  StandardResponseModuleOptions,
+} from 'nest-standard-response';
+
+const options: StandardResponseModuleOptions = {};
 
 @Module({
   imports: [
@@ -25,6 +31,7 @@ import { QueueModule } from './modules/client/appointments/queue/queue.module';
     //     limit: process.env.NODE_ENV === 'production' ? 10 : 100, // 10 requests per minute
     //   },
     // ]),
+    StandardResponseModule.forRoot(options),
     TypeOrmModule.forRoot({
       ...publicOrmConfig,
       entities: [
