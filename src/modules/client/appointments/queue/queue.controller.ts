@@ -23,9 +23,9 @@ import {
   CurrentUserPayload,
 } from '../../auth/decorators/current-user.decorator';
 import { CompleteQueueDto } from './dto/compelete-queue.dto';
-import { ApiResponse } from 'src/common/response-wrapper';
 import { VerifyPaymentDto } from '@/client/payments/dto/verify-payment.dto';
 import { Response } from 'express';
+import { StandardParam, StandardParams } from 'nest-standard-response';
 
 @Controller('client/appointments/queue')
 @UseGuards(BearerAuthGuard, RolesGuard, FieldRestrictionsGuard)
@@ -35,9 +35,11 @@ export class QueueController {
   @Post()
   @Roles(Role.ADMIN, Role.RECEPTIONIST)
   create(
+    @StandardParam() params: StandardParams,
     @Body() createQueueDto: CreateQueueDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
+    params.setMessage('Queue created successfully');
     return this.queueService.create(createQueueDto, user);
   }
 
@@ -59,26 +61,27 @@ export class QueueController {
     @Param('doctorId') doctorId: string,
     @Query('id') queueId?: string,
   ) {
-    return this.queueService.getQueueForDoctor(doctorId, queueId);
+    const queue = this.queueService.getQueueForDoctor(doctorId, queueId);
+    return queue;
   }
 
   @Get(':id')
   @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
   async findOne(@Param('id') id: string) {
     const queue = await this.queueService.findOne(id);
-    return ApiResponse.success(queue);
+    return queue;
   }
 
   @Patch(':id')
   @Roles(Role.ADMIN, Role.RECEPTIONIST)
   update(@Param('id') id: string, @Body() updateQueueDto: UpdateQueueDto) {
-    return ApiResponse.success(this.queueService.update(id, updateQueueDto));
+    return this.queueService.update(id, updateQueueDto);
   }
 
   @Delete(':id')
   @Roles(Role.ADMIN)
   remove(@Param('id') id: string) {
-    return ApiResponse.success(this.queueService.remove(id));
+    return this.queueService.remove(id);
   }
 
   @Patch(':id/call')

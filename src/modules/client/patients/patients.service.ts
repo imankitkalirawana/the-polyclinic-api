@@ -21,7 +21,6 @@ import {
   generatePassword,
 } from './patients.helper';
 import * as bcrypt from 'bcryptjs';
-import { ApiResponse } from 'src/common/response-wrapper';
 
 const patientSelect = [
   'patient.id AS id',
@@ -144,7 +143,7 @@ export class PatientsService extends BaseTenantService {
       throw new NotFoundException('Failed to retrieve created patient');
     }
 
-    return ApiResponse.success(patientWithUser);
+    return patientWithUser;
   }
 
   async findAll(search?: string) {
@@ -164,10 +163,7 @@ export class PatientsService extends BaseTenantService {
       take: 30,
     });
 
-    return ApiResponse.success(
-      patients.map(formatPatient),
-      search ? `${patients.length} patients found` : 'All patients fetched',
-    );
+    return patients.map(formatPatient);
   }
 
   async findByUserId(userId: string) {
@@ -182,7 +178,7 @@ export class PatientsService extends BaseTenantService {
       throw new NotFoundException(`Patient with user ID ${userId} not found`);
     }
 
-    return ApiResponse.success(formatPatient(patient));
+    return formatPatient(patient);
   }
 
   async findOne(id: string) {
@@ -196,7 +192,7 @@ export class PatientsService extends BaseTenantService {
       throw new NotFoundException(`Patient with ID ${id} not found`);
     }
 
-    return ApiResponse.success(formatPatient(patient));
+    return formatPatient(patient);
   }
 
   async update(id: string, updatePatientDto: UpdatePatientDto) {
@@ -251,7 +247,7 @@ export class PatientsService extends BaseTenantService {
       throw new NotFoundException('Failed to retrieve updated patient');
     }
 
-    return ApiResponse.success(patientWithUser);
+    return patientWithUser;
   }
 
   async remove(id: string) {
@@ -268,6 +264,6 @@ export class PatientsService extends BaseTenantService {
 
     await patientRepository.remove(patient);
 
-    return ApiResponse.success(null);
+    return null;
   }
 }

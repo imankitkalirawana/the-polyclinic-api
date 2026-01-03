@@ -19,7 +19,6 @@ import {
   CurrentUserPayload,
 } from './decorators/current-user.decorator';
 import { CheckEmailDto } from './dto/check-email.dto';
-import { ApiResponse } from '../../../common/response-wrapper';
 
 @Controller('client/auth')
 export class AuthController {
@@ -65,6 +64,5 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(@CurrentUser() user: CurrentUserPayload) {
     await this.authService.logout(user.sessionId);
-    return ApiResponse.success({ message: 'Logged out successfully' });
   }
 }

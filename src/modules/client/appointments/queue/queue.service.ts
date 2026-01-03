@@ -23,7 +23,6 @@ import { TenantAuthInitService } from '@/tenancy/tenant-auth-init.service';
 import { Queue, QueueStatus } from './entities/queue.entity';
 import { PaymentMode } from './enums/queue.enum';
 import { Doctor } from '@/client/doctors/entities/doctor.entity';
-import { ApiResponse } from 'src/common/response-wrapper';
 import { appointmentConfirmationTemplate, formatQueue } from './queue.helper';
 import { CompleteQueueDto } from './dto/compelete-queue.dto';
 import { PaymentsService } from '@/client/payments/payments.service';
@@ -141,13 +140,10 @@ export class QueueService extends BaseTenantService {
       // Commit transaction
       await queryRunner.commitTransaction();
 
-      return ApiResponse.success(
-        {
-          ...(await this.findOne(savedQueue.id)),
-          ...result,
-        },
-        'Queue created successfully',
-      );
+      return {
+        ...(await this.findOne(savedQueue.id)),
+        ...result,
+      };
     } catch (error) {
       // Rollback transaction on error
       await queryRunner.rollbackTransaction();
@@ -175,7 +171,7 @@ export class QueueService extends BaseTenantService {
     }
     queue.status = QueueStatus.BOOKED;
     await queueRepository.save(queue);
-    return ApiResponse.success(queue, 'Payment verified');
+    return queue;
   }
 
   async findAll(date?: string) {
@@ -312,11 +308,11 @@ export class QueueService extends BaseTenantService {
         }
       : null;
 
-    return ApiResponse.success({
+    return {
       previous: previousQueues.map(formatQueue),
       current: current ? formatQueue(current) : null,
       next: next ? next.map(formatQueue) : null,
-    });
+    };
   }
 
   // Call queue by id
@@ -346,10 +342,7 @@ export class QueueService extends BaseTenantService {
     };
     await queueRepository.save(queue);
 
-    return ApiResponse.success(
-      queue,
-      `${queue.patient.user.name} has been called`,
-    );
+    return queue;
   }
 
   // skip queue by id
@@ -384,10 +377,7 @@ export class QueueService extends BaseTenantService {
     };
     await queueRepository.save(queue);
 
-    return ApiResponse.success(
-      null,
-      `${queue.patient.user.name}'s turn is skipped`,
-    );
+    return null;
   }
 
   // clock in
@@ -413,7 +403,7 @@ export class QueueService extends BaseTenantService {
     queue.startedAt = new Date();
     await queueRepository.save(queue);
 
-    return ApiResponse.success(null, 'Appointment has been started');
+    return null;
   }
 
   // complete appointment queue
@@ -446,8 +436,6 @@ export class QueueService extends BaseTenantService {
     });
 
     await queueRepository.save(queue);
-
-    return ApiResponse.success(null, 'Appointment completed successfully');
   }
 
   async appointmentReceiptPdf(id: string) {

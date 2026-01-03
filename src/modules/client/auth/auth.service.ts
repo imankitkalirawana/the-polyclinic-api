@@ -20,7 +20,6 @@ import { JwtPayload } from './strategies/bearer.strategy';
 import { CONNECTION } from '../../tenancy/tenancy.symbols';
 import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
 import { CheckEmailDto } from './dto/check-email.dto';
-import { ApiResponse } from 'src/common/response-wrapper';
 
 @Injectable()
 export class AuthService {
@@ -87,9 +86,7 @@ export class AuthService {
     return this.connection.getRepository(Otp);
   }
 
-  async requestOtp(
-    requestOtpDto: RequestOtpDto,
-  ): Promise<ApiResponse<{ message: string }>> {
+  async requestOtp(requestOtpDto: RequestOtpDto) {
     await this.ensureTablesExist();
     const otpRepository = this.getOtpRepository();
     const userRepository = this.getUserRepository();
@@ -129,13 +126,9 @@ export class AuthService {
     // TODO: Send OTP via email/SMS service
     // For now, we'll log it (remove in production)
     this.logger.log(`OTP for ${requestOtpDto.email}`);
-
-    return ApiResponse.success(null, 'OTP sent successfully');
   }
 
-  async verifyOtp(
-    verifyOtpDto: VerifyOtpDto,
-  ): Promise<ApiResponse<{ message: string }>> {
+  async verifyOtp(verifyOtpDto: VerifyOtpDto) {
     await this.ensureTablesExist();
     const otpRepository = this.getOtpRepository();
 
@@ -159,23 +152,17 @@ export class AuthService {
     // Mark OTP as verified
     otp.verified = true;
     await otpRepository.save(otp);
-
-    return ApiResponse.success({ message: 'OTP verified successfully' });
   }
 
-  async checkEmail(
-    checkEmailDto: CheckEmailDto,
-  ): Promise<ApiResponse<{ exists: boolean }>> {
+  async checkEmail(checkEmailDto: CheckEmailDto) {
     await this.ensureTablesExist();
     const userRepository = this.getUserRepository();
     const user = await userRepository.findOne({
       where: { email: checkEmailDto.email },
     });
-    return ApiResponse.success({ exists: !!user });
+    return !!user;
   }
-  async register(
-    registerDto: RegisterDto,
-  ): Promise<ApiResponse<{ user: TenantUser; token: string }>> {
+  async register(registerDto: RegisterDto) {
     await this.ensureTablesExist();
     const userRepository = this.getUserRepository();
     const otpRepository = this.getOtpRepository();
@@ -229,10 +216,10 @@ export class AuthService {
     // Clean up verified OTP after successful registration
     await otpRepository.delete({ email: registerDto.email, verified: true });
 
-    return ApiResponse.success({ user: savedUser, token });
+    return { user: savedUser, token };
   }
 
-  async login(loginDto: LoginDto): Promise<ApiResponse<{ token: string }>> {
+  async login(loginDto: LoginDto) {
     await this.ensureTablesExist();
     const userRepository = this.getUserRepository();
     const user = await userRepository.findOne({
@@ -261,15 +248,15 @@ export class AuthService {
       `User ${user.email} logged in successfully, token: ${token}`,
     );
 
-    return ApiResponse.success({ token });
+    return { token };
   }
 
-  async logout(sessionId: string): Promise<void> {
+  async logout(sessionId: string) {
     const sessionRepository = this.getSessionRepository();
     await sessionRepository.delete({ id: sessionId });
   }
 
-  private async createSession(user: TenantUser): Promise<string> {
+  private async createSession(user: TenantUser) {
     const sessionRepository = this.getSessionRepository();
     const tenantSlug = this.getTenantSlug();
 
@@ -302,7 +289,7 @@ export class AuthService {
     return token;
   }
 
-  async cleanupExpiredSessions(): Promise<void> {
+  async cleanupExpiredSessions() {
     const sessionRepository = this.getSessionRepository();
     await sessionRepository
       .createQueryBuilder()
@@ -312,17 +299,13 @@ export class AuthService {
       .execute();
   }
 
-  async getSession(userId: string): Promise<
-    ApiResponse<{
-      user: Pick<TenantUser, 'id' | 'email' | 'name' | 'role' | 'phone'>;
-    }>
-  > {
+  async getSession(userId: string) {
     const userRepository = this.getUserRepository();
     const user = await userRepository.findOne({
       where: { id: userId },
       select: ['id', 'email', 'name', 'role', 'phone'],
     });
 
-    return ApiResponse.success({ user });
+    return user;
   }
 }

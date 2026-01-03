@@ -15,7 +15,6 @@ import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
 import { Doctor } from './entities/doctor.entity';
 import { TenantUser } from '../auth/entities/tenant-user.entity';
 import { Role } from 'src/common/enums/role.enum';
-import { ApiResponse } from 'src/common/response-wrapper';
 
 const doctorSelect = [
   'doctor.id AS id',
@@ -123,10 +122,7 @@ export class DoctorsService extends BaseTenantService {
       .limit(10)
       .getRawMany();
 
-    return ApiResponse.success(
-      doctors,
-      search ? `${doctors.length} doctors found` : 'All doctors fetched',
-    );
+    return doctors;
   }
 
   async findOne(id: string) {
@@ -140,7 +136,7 @@ export class DoctorsService extends BaseTenantService {
       .where('doctor.id = :id', { id })
       .getRawOne();
 
-    return ApiResponse.success(doctor, 'Doctor fetched successfully');
+    return doctor;
   }
 
   async findByUserId(userId: string) {
