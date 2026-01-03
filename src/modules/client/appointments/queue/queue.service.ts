@@ -5,14 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
-import {
-  Between,
-  DataSource,
-  In,
-  MoreThanOrEqual,
-  Not,
-  QueryRunner,
-} from 'typeorm';
+import { Between, DataSource, In, MoreThanOrEqual, Not } from 'typeorm';
 import { Request } from 'express';
 import { CreateQueueDto } from './dto/create-queue.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
@@ -21,21 +14,18 @@ import { BaseTenantService } from '@/tenancy/base-tenant.service';
 import { CONNECTION } from '@/tenancy/tenancy.symbols';
 import { TenantAuthInitService } from '@/tenancy/tenant-auth-init.service';
 import { Queue, QueueStatus } from './entities/queue.entity';
-import { PaymentMode } from './enums/queue.enum';
 import { Doctor } from '@/client/doctors/entities/doctor.entity';
-import { appointmentConfirmationTemplate, formatQueue } from './queue.helper';
+import { formatQueue, generateReferenceNumber } from './queue.helper';
 import { CompleteQueueDto } from './dto/compelete-queue.dto';
 import { PaymentsService } from '@/client/payments/payments.service';
-import {
-  Payment,
-  PaymentProvider,
-  PaymentReferenceType,
-  PaymentStatus,
-} from '@/client/payments/entities/payment.entity';
-import { RazorpayService } from '@/client/payments/razorpay.service';
 import { VerifyPaymentDto } from '@/client/payments/dto/verify-payment.dto';
-import { Role } from 'src/common/enums/role.enum';
 import { PdfService } from '@/client/pdf/pdf.service';
+import { DoctorsService } from '@/client/doctors/doctors.service';
+import { PaymentReferenceType } from '@/client/payments/entities/payment.entity';
+import { Currency } from '@/client/payments/dto/create-payment.dto';
+import { Role } from 'src/common/enums/role.enum';
+import { PaymentMode } from './enums/queue.enum';
+import { appointmentConfirmationTemplate } from './templates/confirm-appointment.template';
 
 const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
 const todayEnd = new Date(new Date().setHours(23, 59, 59, 999));
@@ -56,100 +46,96 @@ export class QueueService extends BaseTenantService {
     @Inject(CONNECTION) connection: DataSource | null,
     tenantAuthInitService: TenantAuthInitService,
     private readonly paymentsService: PaymentsService,
-    private readonly razorpayService: RazorpayService,
+    private readonly doctorsService: DoctorsService,
     private readonly pdfService: PdfService,
   ) {
     super(request, connection, tenantAuthInitService, QueueService.name);
   }
 
-  async create(createQueueDto: CreateQueueDto, user: CurrentUserPayload) {
+  private getQueueRepository() {
+    return this.getRepository(Queue);
+  }
+
+  // check if a queue is already booked for the same doctor and patient for that date
+  async checkIfQueueIsBooked(doctorId: string, patientId: string) {
+    const queueRepository = this.getQueueRepository();
+    const queue = await queueRepository.findOne({
+      where: { doctorId, patientId, createdAt: Between(todayStart, todayEnd) },
+    });
+    return queue;
+  }
+
+  async create(createQueueDto: CreateQueueDto) {
     await this.ensureTablesExist();
 
-    const doctor = await this.getRepository(Doctor).findOne({
-      where: { id: createQueueDto.doctorId },
-    });
+    const existingQueue = await this.checkIfQueueIsBooked(
+      createQueueDto.doctorId,
+      createQueueDto.patientId,
+    );
 
-    if (!doctor) {
-      throw new NotFoundException('Doctor not found');
+    if (existingQueue && this.request.user.role === Role.PATIENT) {
+      throw new BadRequestException(
+        `You already have an appointment booked  <a class="underline text-primary-500" href="/appointments/queues/${existingQueue.id}">view</a>`,
+      );
     }
 
-    const lastSequenceNumber = doctor.lastSequenceNumber ?? 0;
+    const doctor = await this.doctorsService.findOne(createQueueDto.doctorId);
 
-    // Start transaction
-    const queryRunner: QueryRunner = this.connection.createQueryRunner();
+    // start transaction
+    const queryRunner = this.connection.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
-    let result = null;
-
     try {
-      const manager = queryRunner.manager;
+      const status =
+        createQueueDto.paymentMode === PaymentMode.CASH
+          ? QueueStatus.PAYMENT_PENDING
+          : QueueStatus.PAYMENT_FAILED;
 
-      // Update doctor's last sequence number
-      await manager.update(
-        Doctor,
-        { id: createQueueDto.doctorId },
-        { lastSequenceNumber: lastSequenceNumber + 1 },
-      );
-
-      // Create and save queue
-      const queue = manager.create(Queue, {
+      const queue = queryRunner.manager.create(Queue, {
         ...createQueueDto,
-        bookedBy: user.userId,
-        sequenceNumber: lastSequenceNumber + 1,
-        status:
-          createQueueDto.paymentMode === PaymentMode.CASH
-            ? user.role === Role.PATIENT
-              ? QueueStatus.PAYMENT_PENDING
-              : QueueStatus.BOOKED
-            : undefined,
+        referenceNumber: generateReferenceNumber(),
+        sequenceNumber: doctor.lastSequenceNumber + 1 || 1,
+        status,
+        bookedBy: this.request.user.userId,
       });
 
-      const savedQueue = await manager.save(Queue, queue);
+      await queryRunner.manager.save(Queue, queue);
 
-      // Create payment order if RAZORPAY mode
-      if (createQueueDto.paymentMode === PaymentMode.RAZORPAY) {
-        const amountInPaise = 100 * 100; // TODO: get amount from doctor's fee
+      await queryRunner.manager.increment(
+        Doctor,
+        { id: createQueueDto.doctorId },
+        'lastSequenceNumber',
+        1,
+      );
 
-        // Create Razorpay order (external API call)
-        const razorpayOrder =
-          await this.razorpayService.createOrder(amountInPaise);
-
-        // Create payment entity within transaction
-        const payment = manager.create(Payment, {
-          provider: PaymentProvider.RAZORPAY,
-          orderId: razorpayOrder.id,
-          amount: amountInPaise,
-          currency: 'INR',
-          status: PaymentStatus.CREATED,
-          referenceType: PaymentReferenceType.APPOINTMENT_QUEUE,
-          referenceId: savedQueue.id,
-        });
-
-        await manager.save(Payment, payment);
-
-        result = {
-          orderId: razorpayOrder.id,
-          amount: amountInPaise,
-          currency: 'INR',
-        };
-      }
-
-      // Commit transaction
       await queryRunner.commitTransaction();
-
-      return {
-        ...(await this.findOne(savedQueue.id)),
-        ...result,
-      };
+      return queue;
     } catch (error) {
-      // Rollback transaction on error
+      this.logger.error(error);
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
-      // Release query runner
       await queryRunner.release();
     }
+  }
+
+  async createPayment(queueId: string) {
+    await this.ensureTablesExist();
+    const queue = await this.getQueueRepository().findOne({
+      where: { id: queueId },
+    });
+
+    if (!queue) {
+      throw new NotFoundException(`Queue with ID ${queueId} not found`);
+    }
+
+    return await this.paymentsService.createPayment({
+      referenceId: queueId,
+      amount: 10000,
+      currency: Currency.INR,
+      referenceType: PaymentReferenceType.APPOINTMENT_QUEUE,
+    });
   }
 
   async verifyPayment(verifyPaymentDto: VerifyPaymentDto) {
@@ -157,7 +143,7 @@ export class QueueService extends BaseTenantService {
     const payment = await this.paymentsService.verifyPayment(verifyPaymentDto);
 
     // update queue status to booked
-    const queueRepository = this.getRepository(Queue);
+    const queueRepository = this.getQueueRepository();
     const queue = await queueRepository.findOne({
       where: { id: payment.referenceId },
     });
@@ -170,6 +156,22 @@ export class QueueService extends BaseTenantService {
     queue.status = QueueStatus.BOOKED;
     await queueRepository.save(queue);
     return queue;
+  }
+
+  async cancelPayment(queueId: string, remark?: string) {
+    const queue = await this.getQueueRepository().findOne({
+      where: { id: queueId },
+    });
+    if (!queue) {
+      throw new NotFoundException(`Queue with ID ${queueId} not found`);
+    }
+
+    queue.status = QueueStatus.CANCELLED;
+    queue.cancellationDetails = {
+      by: this.request.user.userId,
+      remark,
+    };
+    return await this.getQueueRepository().save(queue);
   }
 
   async findAll(date?: string) {
@@ -250,8 +252,6 @@ export class QueueService extends BaseTenantService {
 
   async getQueueForDoctor(doctorId: string, queueId?: string) {
     let requestedQueue: Queue | null = null;
-
-    this.logger.log(`Queue ID: ${queueId}`);
 
     if (queueId) {
       requestedQueue = await this.getRepository(Queue).findOne({

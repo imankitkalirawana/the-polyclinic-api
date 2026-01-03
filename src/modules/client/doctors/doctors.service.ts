@@ -129,12 +129,14 @@ export class DoctorsService extends BaseTenantService {
     await this.ensureTablesExist();
     const doctorRepository = this.getDoctorRepository();
 
-    const doctor = await doctorRepository
-      .createQueryBuilder('doctor')
-      .leftJoin('doctor.user', 'user')
-      .select([...doctorSelect, ...userSelect])
-      .where('doctor.id = :id', { id })
-      .getRawOne();
+    const doctor = await doctorRepository.findOne({
+      where: { id },
+      relations: ['user'],
+    });
+
+    if (!doctor) {
+      throw new NotFoundException(`Doctor with ID ${id} not found`);
+    }
 
     return doctor;
   }

@@ -8,6 +8,11 @@ import {
 import { PaymentMode } from '../enums/queue.enum';
 
 export class CreateQueueDto {
+  // Queue ID is optional, if provided, the queue will be updated
+  @IsUUID()
+  @IsOptional()
+  queueId?: string;
+
   @IsUUID()
   @IsNotEmpty()
   patientId: string;

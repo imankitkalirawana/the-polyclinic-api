@@ -160,7 +160,7 @@ export class AuthService {
     const user = await userRepository.findOne({
       where: { email: checkEmailDto.email },
     });
-    return !!user;
+    return { exists: !!user };
   }
   async register(registerDto: RegisterDto) {
     await this.ensureTablesExist();
@@ -306,6 +306,6 @@ export class AuthService {
       select: ['id', 'email', 'name', 'role', 'phone'],
     });
 
-    return user;
+    return { user };
   }
 }

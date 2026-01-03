@@ -9,6 +9,7 @@ import {
   UseGuards,
   Query,
   Res,
+  Logger,
 } from '@nestjs/common';
 import { QueueService } from './queue.service';
 import { CreateQueueDto } from './dto/create-queue.dto';
@@ -26,21 +27,38 @@ import { CompleteQueueDto } from './dto/compelete-queue.dto';
 import { VerifyPaymentDto } from '@/client/payments/dto/verify-payment.dto';
 import { Response } from 'express';
 import { StandardParam, StandardParams } from 'nest-standard-response';
+import { PaymentMode } from './enums/queue.enum';
 
 @Controller('client/appointments/queue')
 @UseGuards(BearerAuthGuard, RolesGuard, FieldRestrictionsGuard)
 export class QueueController {
+  private readonly logger = new Logger(QueueController.name);
   constructor(private readonly queueService: QueueService) {}
 
   @Post()
   @Roles(Role.ADMIN, Role.RECEPTIONIST)
-  create(
+  async create(
     @StandardParam() params: StandardParams,
     @Body() createQueueDto: CreateQueueDto,
-    @CurrentUser() user: CurrentUserPayload,
   ) {
-    params.setMessage('Queue created successfully');
-    return this.queueService.create(createQueueDto, user);
+    let queue = null;
+    if (createQueueDto.queueId) {
+      queue = await this.queueService.findOne(createQueueDto.queueId);
+    } else {
+      queue = await this.queueService.create(createQueueDto);
+    }
+
+    params.setMessage(`Your appointment has been booked`);
+
+    if (queue && createQueueDto.paymentMode === PaymentMode.RAZORPAY) {
+      const payment = await this.queueService.createPayment(queue.id);
+
+      return {
+        ...queue,
+        payment,
+      };
+    }
+    return queue;
   }
 
   @Post('verify-payment')

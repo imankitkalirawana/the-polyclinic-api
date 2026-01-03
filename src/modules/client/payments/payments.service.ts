@@ -11,12 +11,18 @@ import { BaseTenantService } from '../../tenancy/base-tenant.service';
 import { CONNECTION } from '../../tenancy/tenancy.symbols';
 import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
-import { Payment, PaymentStatus } from './entities/payment.entity';
+import {
+  Payment,
+  PaymentProvider,
+  PaymentReferenceType,
+  PaymentStatus,
+} from './entities/payment.entity';
 import {
   Queue,
   QueueStatus,
 } from '../appointments/queue/entities/queue.entity';
 import { RazorpayService } from './razorpay.service';
+import { CreatePaymentDto } from './dto/create-payment.dto';
 
 @Injectable()
 export class PaymentsService extends BaseTenantService {
@@ -29,9 +35,38 @@ export class PaymentsService extends BaseTenantService {
     super(request, connection, tenantAuthInitService, PaymentsService.name);
   }
 
+  private getPaymentRepository() {
+    return this.getRepository(Payment);
+  }
+
+  async createPayment(createPaymentDto: CreatePaymentDto) {
+    await this.ensureTablesExist();
+
+    // first call razorpay to create order
+    const order = await this.razorpayService.createOrder(
+      createPaymentDto.amount,
+    );
+
+    const paymentRepo = this.getPaymentRepository();
+    const payment = paymentRepo.create({
+      ...createPaymentDto,
+      provider: PaymentProvider.RAZORPAY,
+      referenceType: PaymentReferenceType.APPOINTMENT_QUEUE,
+      referenceId: createPaymentDto.referenceId,
+      orderId: order.id,
+    });
+    await paymentRepo.save(payment);
+
+    return {
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+    };
+  }
+
   async verifyPayment(dto: VerifyPaymentDto) {
     await this.ensureTablesExist();
-    const paymentRepo = this.getRepository(Payment);
+    const paymentRepo = this.getPaymentRepository();
 
     const payment = await paymentRepo.findOne({
       where: { orderId: dto.orderId },
@@ -64,7 +99,7 @@ export class PaymentsService extends BaseTenantService {
 
   async handleWebhookEvent(webhookPayload: any) {
     await this.ensureTablesExist();
-    const paymentRepo = this.getRepository(Payment);
+    const paymentRepo = this.getPaymentRepository();
     const queueRepo = this.getRepository(Queue);
 
     const event = webhookPayload.event;

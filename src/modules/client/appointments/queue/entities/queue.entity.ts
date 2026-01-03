@@ -10,6 +10,7 @@ import {
 import { Patient } from '@/client/patients/entities/patient.entity';
 import { Doctor } from '@/client/doctors/entities/doctor.entity';
 import { TenantUser } from '@/client/auth/entities/tenant-user.entity';
+import { PaymentMode } from '../enums/queue.enum';
 
 export enum QueueStatus {
   PAYMENT_PENDING = 'PAYMENT_PENDING',
@@ -32,6 +33,13 @@ export interface Counter {
 export class Queue {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({
+    type: 'varchar',
+    length: 10,
+    unique: true,
+  })
+  referenceNumber: string;
 
   @Column({ type: 'uuid' })
   patientId: string;
@@ -80,6 +88,9 @@ export class Queue {
   @Column({ type: 'text', nullable: true })
   prescription: string;
 
+  @Column({ type: 'enum', enum: PaymentMode, default: PaymentMode.CASH })
+  paymentMode: PaymentMode;
+
   @Column({ type: 'timestamp with time zone', nullable: true })
   startedAt: Date;
 
@@ -106,6 +117,19 @@ export class Queue {
     },
   })
   counter: Counter;
+
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+    default: {
+      by: null,
+      remark: null,
+    },
+  })
+  cancellationDetails: {
+    by: string;
+    remark: string;
+  };
 
   @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date;
