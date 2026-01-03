@@ -1,7 +1,7 @@
 import { formatDate } from 'date-fns';
 import { Queue } from '../entities/queue.entity';
 
-export function appointmentConfirmationTemplate(queue: Queue) {
+export function appointmentConfirmationTemplate(queue: Queue, qrCode: string) {
   return `
   <!DOCTYPE html>
   <html>
@@ -128,6 +128,12 @@ export function appointmentConfirmationTemplate(queue: Queue) {
       <div class="row">
         <div class="label">Booked On</div>
         <div class="value">${formatDate(queue.createdAt, 'dd MMM yyyy hh:mm a')}</div>
+      </div>
+      <div class="row">
+        <div class="label"></div>
+        <div class="value">
+         <img src="${qrCode}" alt="QR Code" style="width: 50px; height: 50px;" />
+        </div>
       </div>
     </div>
     <footer>

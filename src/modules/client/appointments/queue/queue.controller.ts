@@ -104,29 +104,34 @@ export class QueueController {
 
   @Patch(':id/call')
   @Roles(Role.ADMIN, Role.DOCTOR)
-  callQueue(@Param('id') id: string) {
+  callQueue(@StandardParam() params: StandardParams, @Param('id') id: string) {
+    params.setMessage(`Patient has been called`);
     return this.queueService.callQueue(id);
   }
 
   @Patch(':id/clock-in')
   @Roles(Role.ADMIN, Role.DOCTOR)
-  clockIn(@Param('id') id: string) {
+  clockIn(@StandardParam() params: StandardParams, @Param('id') id: string) {
+    params.setMessage(`Appointment started`);
     return this.queueService.clockIn(id);
   }
 
   @Patch(':id/skip')
   @Roles(Role.ADMIN, Role.DOCTOR)
-  skipQueue(@Param('id') id: string) {
+  skipQueue(@StandardParam() params: StandardParams, @Param('id') id: string) {
+    params.setMessage(`Patient has been temporarily skipped`);
     return this.queueService.skipQueue(id);
   }
 
   @Patch(':id/complete')
   @Roles(Role.ADMIN, Role.DOCTOR)
   completeAppointmentQueue(
+    @StandardParam() params: StandardParams,
     @Param('id') id: string,
     @Body() completeQueueDto: CompleteQueueDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
+    params.setMessage(`Appointment Completed`);
     return this.queueService.completeAppointmentQueue(
       id,
       completeQueueDto,

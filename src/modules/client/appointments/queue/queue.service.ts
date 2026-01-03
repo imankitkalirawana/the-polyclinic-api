@@ -26,6 +26,7 @@ import { Currency } from '@/client/payments/dto/create-payment.dto';
 import { Role } from 'src/common/enums/role.enum';
 import { PaymentMode } from './enums/queue.enum';
 import { appointmentConfirmationTemplate } from './templates/confirm-appointment.template';
+import { QrService } from '@/client/qr/qr.service';
 
 const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
 const todayEnd = new Date(new Date().setHours(23, 59, 59, 999));
@@ -48,6 +49,7 @@ export class QueueService extends BaseTenantService {
     private readonly paymentsService: PaymentsService,
     private readonly doctorsService: DoctorsService,
     private readonly pdfService: PdfService,
+    private readonly qrService: QrService,
   ) {
     super(request, connection, tenantAuthInitService, QueueService.name);
   }
@@ -280,7 +282,14 @@ export class QueueService extends BaseTenantService {
       where: {
         doctorId,
         createdAt: Between(todayStart, todayEnd),
-        status: Not(In([QueueStatus.COMPLETED, QueueStatus.CANCELLED])),
+        status: Not(
+          In([
+            QueueStatus.COMPLETED,
+            QueueStatus.CANCELLED,
+            QueueStatus.PAYMENT_FAILED,
+            QueueStatus.PAYMENT_PENDING,
+          ]),
+        ),
       },
       relations: queueRelations,
       order: {
@@ -420,7 +429,11 @@ export class QueueService extends BaseTenantService {
       throw new NotFoundException(`Queue with ID ${id} not found`);
     }
 
-    if (queue.status !== QueueStatus.IN_CONSULTATION) {
+    if (
+      ![QueueStatus.IN_CONSULTATION, QueueStatus.COMPLETED].includes(
+        queue.status,
+      )
+    ) {
       throw new BadRequestException(
         'Appointment should be in consultation to complete',
       );
@@ -434,6 +447,7 @@ export class QueueService extends BaseTenantService {
     });
 
     await queueRepository.save(queue);
+    return null;
   }
 
   async appointmentReceiptPdf(id: string) {
@@ -448,15 +462,23 @@ export class QueueService extends BaseTenantService {
       throw new NotFoundException('Queue not found');
     }
 
-    const html = appointmentConfirmationTemplate({
-      ...queue,
-      id: queue.id.slice(-6).toUpperCase(),
-    });
+    const url = `${process.env.APP_URL}/appointments/queues/${queue.referenceNumber}`;
+
+    const qrCode = await this.qrService.generateBase64(url);
+
+    const html = appointmentConfirmationTemplate(
+      {
+        ...queue,
+        id: queue.id.slice(-6).toUpperCase(),
+      },
+      qrCode,
+    );
 
     const pdf = await this.pdfService.htmlToPdf(html, 'A6');
 
     return {
       pdf,
+
       metaData: {
         title: 'Appointment Receipt',
         filename: `${queue.patient.user.name.replace(' ', '_')}_${queue.sequenceNumber}.pdf`,

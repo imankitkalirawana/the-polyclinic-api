@@ -9,6 +9,7 @@ import { TenantAuthInitService } from '../../../tenancy/tenant-auth-init.service
 import { PaymentsModule } from '../../payments/payments.module';
 import { PdfModule } from '../../pdf/pdf.module';
 import { DoctorsModule } from '../../doctors/doctors.module';
+import { QrModule } from '../../qr/qr.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { DoctorsModule } from '../../doctors/doctors.module';
     PaymentsModule,
     PdfModule,
     DoctorsModule,
+    QrModule,
   ],
   controllers: [QueueController],
   providers: [QueueService, TenantAuthInitService],
