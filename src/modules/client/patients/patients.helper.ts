@@ -1,3 +1,4 @@
+import { formatLabel } from 'src/common/utils/text-transform.util';
 import { Patient } from './entities/patient.entity';
 
 export function areNamesSimilar(
@@ -68,6 +69,9 @@ export function formatPatient(patient: Patient) {
     email: patient.user?.email,
     phone: patient.user?.phone ?? null,
     image: patient.user?.image ?? null,
+    age: patient.age,
+    gender: formatLabel(patient.gender),
+    address: patient.address,
     createdAt: patient.createdAt,
     updatedAt: patient.updatedAt,
   };

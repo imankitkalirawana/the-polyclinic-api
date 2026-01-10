@@ -7,7 +7,7 @@ import {
   OneToOne,
   JoinColumn,
 } from 'typeorm';
-import { TenantUser } from '../../auth/entities/tenant-user.entity';
+import { TenantUser } from '../../users/entities/tenant-user.entity';
 
 export enum Gender {
   MALE = 'MALE',

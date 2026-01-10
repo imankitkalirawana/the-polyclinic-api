@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { Patient } from '@/client/patients/entities/patient.entity';
 import { Doctor } from '@/client/doctors/entities/doctor.entity';
-import { TenantUser } from '@/client/auth/entities/tenant-user.entity';
+import { TenantUser } from '@/client/users/entities/tenant-user.entity';
 import { PaymentMode } from '../enums/queue.enum';
 
 export enum QueueStatus {

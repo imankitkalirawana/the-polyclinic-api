@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -24,16 +25,40 @@ import {
 import { AllowFields } from '@/public/auth/decorators/allow-fields.decorator';
 import { RestrictFields } from '@/public/auth/decorators/restrict-fields.decorator';
 import { FieldRestrictionsGuard } from '@/public/auth/guards/field-restrictions.guard';
+import { PatientsService } from '../patients/patients.service';
+import { DoctorsService } from '../doctors/doctors.service';
+import { StandardParam, StandardParams } from 'nest-standard-response';
+import { formatLabel } from 'src/common/utils/text-transform.util';
 
 @Controller('client/users')
 @UseGuards(BearerAuthGuard, RolesGuard, FieldRestrictionsGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly patientsService: PatientsService,
+    private readonly doctorsService: DoctorsService,
+  ) {}
 
   @Post()
   @Roles(Role.ADMIN)
-  async create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  async create(
+    @StandardParam() params: StandardParams,
+    @Body() createUserDto: CreateUserDto,
+  ) {
+    const user = await this.usersService.create(createUserDto);
+    createUserDto.userId = user.id;
+
+    if (createUserDto.role === Role.PATIENT) {
+      await this.patientsService.create(createUserDto);
+    }
+    if (createUserDto.role === Role.DOCTOR) {
+      await this.doctorsService.create(createUserDto);
+    }
+
+    params.setMessage(
+      `${formatLabel(createUserDto.role)} created successfully`,
+    );
+    return user;
   }
 
   @Get('me')
@@ -63,7 +88,25 @@ export class UsersController {
     role: [Role.DOCTOR],
     fields: ['email', 'role'],
   })
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  async update(
+    @StandardParam() params: StandardParams,
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    const user = await this.usersService.findOne(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    if (user.role === Role.DOCTOR) {
+      await this.doctorsService.update(id, updateUserDto);
+    }
+
+    if (user.role === Role.PATIENT) {
+      await this.patientsService.update(id, updateUserDto);
+    }
+
+    params.setMessage(`${formatLabel(user.role)} updated successfully`);
     return this.usersService.update(id, updateUserDto);
   }
 

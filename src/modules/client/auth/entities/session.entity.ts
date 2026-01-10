@@ -7,7 +7,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { TenantUser } from './tenant-user.entity';
+import { TenantUser } from '../../users/entities/tenant-user.entity';
 
 @Entity('sessions')
 @Index(['token'], { unique: true })

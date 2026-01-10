@@ -7,7 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Role } from 'src/common/enums/role.enum';
-import { Session } from './session.entity';
+import { Session } from '../../auth/entities/session.entity';
 import { Status } from 'src/common/enums/status.enum';
 
 @Entity('users')

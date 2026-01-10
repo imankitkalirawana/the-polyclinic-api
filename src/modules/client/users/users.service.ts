@@ -10,11 +10,12 @@ import { Repository, DataSource } from 'typeorm';
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
 import * as bcrypt from 'bcryptjs';
-import { TenantUser } from '../auth/entities/tenant-user.entity';
+import { TenantUser } from './entities/tenant-user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CONNECTION } from '../../tenancy/tenancy.symbols';
 import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class UsersService {
@@ -69,16 +70,22 @@ export class UsersService {
     await this.ensureTablesExist();
     const userRepository = this.getUserRepository();
 
+    this.logger.log(JSON.stringify(createUserDto));
+
     // Check if user with email already exists
     const existingUser = await userRepository.findOne({
       where: { email: createUserDto.email },
     });
 
+    this.logger.log(JSON.stringify(existingUser));
+
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const password = createUserDto.password || uuidv4();
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = userRepository.create({
       email: createUserDto.email,
@@ -127,43 +134,18 @@ export class UsersService {
     return userWithoutPassword;
   }
 
-  async update(
-    id: string,
-    updateUserDto: UpdateUserDto,
-  ): Promise<Omit<TenantUser, 'password'>> {
-    await this.ensureTablesExist();
+  async update(id: string, updateUserDto: UpdateUserDto) {
     const userRepository = this.getUserRepository();
-
     const user = await userRepository.findOne({
       where: { id },
     });
-
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-
-    // Check if email is being updated and if it's already taken
-    if (updateUserDto.email && updateUserDto.email !== user.email) {
-      const existingUser = await userRepository.findOne({
-        where: { email: updateUserDto.email },
-      });
-
-      if (existingUser) {
-        throw new ConflictException('User with this email already exists');
-      }
-    }
-
-    // Hash password if provided
-    if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-    }
-
     Object.assign(user, updateUserDto);
     const updatedUser = await userRepository.save(user);
-
-    // Remove password from response
-    const { password, ...userWithoutPassword } = updatedUser;
-    return userWithoutPassword;
+    delete updatedUser.password;
+    return updatedUser;
   }
 
   async remove(id: string): Promise<void> {

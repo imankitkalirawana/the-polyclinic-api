@@ -5,7 +5,7 @@ import { getTenantConnection } from '@/tenancy/connection-pool';
 import { TenantMigrationService } from '@/tenancy/services/tenant-migration.service';
 import { ActivityLog } from '../entities/activity-log.entity';
 import { ActivityLogPayload } from '../interfaces/activity-payload.interface';
-import { TenantUser } from '@/client/auth/entities/tenant-user.entity';
+import { TenantUser } from '@/client/users/entities/tenant-user.entity';
 
 @Injectable()
 export class ActivityListener {

@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { TenantUser } from '../../auth/entities/tenant-user.entity';
+import { TenantUser } from '../../users/entities/tenant-user.entity';
 
 @Entity('doctors')
 export class Doctor {

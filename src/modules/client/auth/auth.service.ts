@@ -9,7 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
 import * as bcrypt from 'bcryptjs';
-import { TenantUser } from './entities/tenant-user.entity';
+import { TenantUser } from '../users/entities/tenant-user.entity';
 import { Session } from './entities/session.entity';
 import { Otp } from './entities/otp.entity';
 import { LoginDto } from './dto/login.dto';

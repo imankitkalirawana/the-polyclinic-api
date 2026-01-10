@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { ActivityAction } from '../enums/activity-action.enum';
 import { ActorType } from '../enums/actor-type.enum';
-import { TenantUser } from '@/client/auth/entities/tenant-user.entity';
+import { TenantUser } from '@/client/users/entities/tenant-user.entity';
 
 @Entity('activity_logs')
 export class ActivityLog {

@@ -10,7 +10,6 @@ import {
   Query,
 } from '@nestjs/common';
 import { PatientsService } from './patients.service';
-import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
 import { BearerAuthGuard } from '../auth/guards/bearer-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -21,6 +20,7 @@ import {
   CurrentUserPayload,
 } from '../auth/decorators/current-user.decorator';
 import { StandardParam, StandardParams } from 'nest-standard-response';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Controller('client/patients')
 @UseGuards(BearerAuthGuard, RolesGuard)
@@ -30,11 +30,11 @@ export class PatientsController {
   @Post()
   @Roles(Role.ADMIN, Role.DOCTOR, Role.RECEPTIONIST)
   async create(
-    @Body() createPatientDto: CreatePatientDto,
+    @Body() createUserDto: CreateUserDto,
     @StandardParam() params: StandardParams,
   ) {
     params.setMessage(`Patient created successfully`);
-    return this.patientsService.create(createPatientDto);
+    return this.patientsService.create(createUserDto);
   }
 
   @Get()

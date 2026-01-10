@@ -4,7 +4,7 @@ import { Strategy, ExtractJwt } from 'passport-jwt';
 import { Request } from 'express';
 import { getTenantConnection } from '../../../tenancy/connection-pool';
 import { Session } from '../entities/session.entity';
-import { TenantUser } from '../entities/tenant-user.entity';
+import { TenantUser } from '../../users/entities/tenant-user.entity';
 
 export interface JwtPayload {
   sessionId: string;

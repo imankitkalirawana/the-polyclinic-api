@@ -6,7 +6,7 @@ import { UsersService as PublicUsersService } from '../modules/public/users/user
 import { TenantsService } from '../modules/public/tenants/tenants.service';
 import { TenantAuthInitService } from '../modules/tenancy/tenant-auth-init.service';
 import { getTenantConnectionConfig } from '../tenant-orm.config';
-import { TenantUser } from '../modules/client/auth/entities/tenant-user.entity';
+import { TenantUser } from '../modules/client/users/entities/tenant-user.entity';
 import { PublicUser } from '../modules/public/auth/entities/public-user.entity';
 import { Role, SystemRole } from '../common/enums/role.enum';
 import { Status } from '../common/enums/status.enum';
