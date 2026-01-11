@@ -31,8 +31,8 @@ export class Doctor {
   @Column('text', { array: true, nullable: true })
   departments?: string[];
 
-  @Column({ type: 'text', nullable: true })
-  experience?: string;
+  @Column({ type: 'integer', nullable: true })
+  experience?: number;
 
   @Column({ type: 'text', nullable: true })
   education?: string;

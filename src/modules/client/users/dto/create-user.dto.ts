@@ -162,9 +162,12 @@ export class CreateUserDto {
   @IsOptional()
   departments?: string[];
 
-  @IsString()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @Transform(({ value }) => parseInt(value))
   @IsOptional()
-  experience?: string;
+  experience?: number;
 
   @IsString()
   @IsOptional()

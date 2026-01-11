@@ -12,7 +12,7 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 import { BaseTenantService } from '../../tenancy/base-tenant.service';
 import { CONNECTION } from '../../tenancy/tenancy.symbols';
 import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
-import { formatPatient, queryDeletedPatient } from './patients.helper';
+import { formatPatient } from './patients.helper';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Injectable()
@@ -44,9 +44,8 @@ export class PatientsService extends BaseTenantService {
             { user: { name: ILike(`%${search}%`) } },
             { user: { email: ILike(`%${search}%`) } },
             { user: { phone: ILike(`%${search}%`) } },
-            queryDeletedPatient,
           ]
-        : queryDeletedPatient,
+        : {},
       relations: ['user'],
       order: {
         user: { name: 'ASC' },
