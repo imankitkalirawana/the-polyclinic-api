@@ -1,23 +1,26 @@
-# Use the official Node.js image as the base image
+# Use the official Node.js image
 FROM node:20
 
-# Set the working directory inside the container
+# Set working directory
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
+# Enable corepack and activate pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Install the application dependencies
-RUN npm install
+# Copy dependency files
+COPY package.json pnpm-lock.yaml ./
 
-# Copy the rest of the application files
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy the rest of the source code
 COPY . .
 
 # Build the NestJS application
-RUN npm run build
+RUN pnpm run build
 
-# Expose the application port
+# Expose the app port
 EXPOSE 3000
 
-# Command to run the application
-CMD ["node", "dist/main"]
+# Start the application
+CMD ["node", "dist/main.js"]
