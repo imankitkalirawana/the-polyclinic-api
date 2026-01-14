@@ -65,13 +65,6 @@ async function bootstrap() {
   const port = process.env.PORT ?? 8000;
   await app.listen(port, '0.0.0.0');
 
-  logger.log(`Application is running on: http://0.0.0.0:${port}/api/v1`, {
-    port,
-    environment: process.env.NODE_ENV || 'development',
-    gcpLoggingEnabled:
-      process.env.NODE_ENV === 'production' && !!process.env.GCP_PROJECT_ID,
-  });
-
   // Handle uncaught exceptions and unhandled rejections
   process.on('uncaughtException', (error: Error) => {
     logger.error('Uncaught Exception', error.stack, {

@@ -7,6 +7,7 @@ WORKDIR /usr/src/app
 ENV GCP_LOG_NAME=the-polyclinic-api
 ENV NODE_ENV=production
 ENV GCP_ENABLE_IN_DEV=true
+ENV TZ=Asia/Kolkata
 
 # Enable corepack and activate pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
