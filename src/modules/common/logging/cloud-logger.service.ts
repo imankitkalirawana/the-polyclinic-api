@@ -39,6 +39,18 @@ export class CloudLoggerService implements LoggerService {
     const enableGcpLogging =
       process.env.GCP_ENABLE_IN_DEV === 'true' || this.isProduction;
 
+    console.log('[GCP] GCP_PROJECT_ID:', this.projectId);
+    console.log('[GCP] GCP_ENABLE_IN_DEV:', process.env.GCP_ENABLE_IN_DEV);
+    console.log('[GCP] NODE_ENV:', process.env.NODE_ENV);
+    console.log('[GCP] isProduction:', this.isProduction);
+    console.log('[GCP] enableGcpLogging:', enableGcpLogging);
+
+    // temperarily log the credentials
+    console.log(
+      '[GCP] GCP_CREDENTIALS:',
+      JSON.stringify(process.env.GCP_CREDENTIALS, null, 2),
+    );
+
     const credentials = process.env.GCP_CREDENTIALS;
 
     if (this.projectId && enableGcpLogging) {

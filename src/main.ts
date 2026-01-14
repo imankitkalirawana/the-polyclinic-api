@@ -68,8 +68,8 @@ async function bootstrap() {
   logger.log(`Application is running on: http://0.0.0.0:${port}/api/v1`, {
     port,
     environment: process.env.NODE_ENV || 'development',
-    gcpLoggingEnabled: true,
-    // process.env.NODE_ENV === 'production' && !!process.env.GCP_PROJECT_ID,
+    gcpLoggingEnabled:
+      process.env.NODE_ENV === 'production' && !!process.env.GCP_PROJECT_ID,
   });
 
   // Handle uncaught exceptions and unhandled rejections
