@@ -1,0 +1,64 @@
+# Commit Message Format
+
+When generating commit messages, ALWAYS follow the Conventional Commits format as defined in `commitlint.config.ts`:
+
+## Format
+
+```
+type(scope?): subject
+```
+
+## Required Rules
+
+- **Type** (required): Must be one of: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+- **Scope** (optional): Module or area affected (e.g., `appointments`, `patient-data`, `auth`)
+- **Subject** (required): Brief description in lowercase, no period at end
+- **Max length**: 200 characters for the entire header
+
+## Examples of Valid Commit Messages
+
+```
+feat(appointments): add real-time conflict detection
+fix(patient-data): resolve PHI masking in errors
+security(auth): implement MFA for providers
+refactor(validation): migrate Yup to Zod
+docs(api): update authentication endpoints
+style(email): format receipt template
+perf(database): optimize appointment queries
+test(auth): add unit tests for JWT strategy
+build(deps): update NestJS to v10
+ci(github): add commitlint to workflow
+chore(config): update TypeScript settings
+```
+
+## Invalid Examples (DO NOT USE)
+
+```
+❌ Fixed bug in appointments
+❌ update: changed validation logic
+❌ [FEAT] Add new feature
+❌ feat: Add new feature.
+❌ fix appointments bug
+```
+
+## When Generating Commit Messages
+
+1. Analyze the staged changes to determine the appropriate type
+2. Identify the scope based on which module/area was modified
+3. Write a concise subject in lowercase without a period
+4. Ensure the entire header is under 200 characters
+5. Use imperative mood ("add" not "added", "fix" not "fixed")
+
+## Type Selection Guide
+
+- `feat`: New functionality or feature
+- `fix`: Bug fix
+- `docs`: Documentation only changes
+- `style`: Code style changes (formatting, whitespace)
+- `refactor`: Code restructuring without changing behavior
+- `perf`: Performance improvements
+- `test`: Adding or updating tests
+- `build`: Build system or dependency changes
+- `ci`: CI/CD configuration changes
+- `chore`: Maintenance tasks, config updates
+- `revert`: Reverting a previous commit

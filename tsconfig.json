@@ -23,5 +23,10 @@
     "jsx": "react-jsx",
     "esModuleInterop": true
   },
-  "include": ["src/**/*", "tailwind.config.ts", "commitlint.config.ts"]
+  "include": [
+    "src/**/*",
+    "tailwind.config.ts",
+    "commitlint.config.ts",
+    "emails/receipt.tsx"
+  ]
 }

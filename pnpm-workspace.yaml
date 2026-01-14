@@ -1,5 +1,7 @@
 onlyBuiltDependencies:
   - '@nestjs/core'
   - '@prisma/engines'
+  - esbuild
   - prisma
   - puppeteer
+  - sharp

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { render } from '@react-email/render';
 import { resend } from 'src/lib/resend';
-import AppleReceiptEmail from './templates/receipt';
+import AppleReceiptEmail from '../../../../emails/receipt';
 
 @Injectable()
 export class EmailService {
