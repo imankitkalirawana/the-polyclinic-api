@@ -262,7 +262,11 @@ export class LoggingInterceptor implements NestInterceptor {
       os = 'Linux';
     } else if (ua.includes('android')) {
       os = 'Android';
-    } else if (ua.includes('ios') || ua.includes('iphone') || ua.includes('ipad')) {
+    } else if (
+      ua.includes('ios') ||
+      ua.includes('iphone') ||
+      ua.includes('ipad')
+    ) {
       os = 'iOS';
     }
 
