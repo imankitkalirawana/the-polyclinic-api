@@ -39,15 +39,24 @@ export class CloudLoggerService implements LoggerService {
     const enableGcpLogging =
       process.env.GCP_ENABLE_IN_DEV === 'true' || this.isProduction;
 
+    const credentials = process.env.GCP_CREDENTIALS;
+
     if (this.projectId && enableGcpLogging) {
       try {
-        this.gcpLogging = new Logging({
-          projectId: this.projectId,
-          // Credentials will be automatically detected from:
-          // 1. GOOGLE_APPLICATION_CREDENTIALS environment variable
-          // 2. GCP metadata service (when running on GCP)
-          // 3. gcloud CLI credentials
-        });
+        if (credentials) {
+          this.gcpLogging = new Logging({
+            projectId: this.projectId,
+            credentials: JSON.parse(credentials),
+          });
+        } else {
+          this.gcpLogging = new Logging({
+            projectId: this.projectId,
+            // Credentials will be automatically detected from:
+            // 1. GOOGLE_APPLICATION_CREDENTIALS environment variable
+            // 2. GCP metadata service (when running on GCP)
+            // 3. gcloud CLI credentials
+          });
+        }
       } catch (error) {
         console.error('Failed to initialize Google Cloud Logging:', error);
         // Fallback to console logging if GCP initialization fails
