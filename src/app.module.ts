@@ -19,6 +19,7 @@ import { QueueModule } from './modules/client/appointments/queue/queue.module';
 import { ActivityModule } from './modules/common/activity/activity.module';
 import { CronModule } from './modules/common/cron/cron.module';
 import { EmailModule } from './modules/common/email/email.module';
+import { LoggingModule } from './modules/common/logging/logging.module';
 import {
   StandardResponseModule,
   StandardResponseModuleOptions,
@@ -63,6 +64,7 @@ const options: StandardResponseModuleOptions = {};
     ActivityModule,
     CronModule,
     EmailModule,
+    LoggingModule,
   ],
   controllers: [AppController],
   providers: [
