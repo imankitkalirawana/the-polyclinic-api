@@ -46,12 +46,6 @@ export class Doctor {
   @Column({ nullable: true })
   seating?: string;
 
-  @Column({ default: 0 })
-  lastSequenceNumber?: number;
-
-  @Column({ default: 0 })
-  currentSequenceNumber?: number;
-
   @CreateDateColumn()
   createdAt: Date;
 

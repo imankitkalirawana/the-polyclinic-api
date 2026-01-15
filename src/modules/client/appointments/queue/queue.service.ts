@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
-import { Between, DataSource, In, MoreThanOrEqual, Not } from 'typeorm';
+import { Between, DataSource, Equal, In, MoreThanOrEqual, Not } from 'typeorm';
 import { Request } from 'express';
 import { CreateQueueDto } from './dto/create-queue.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
@@ -66,6 +66,37 @@ export class QueueService extends BaseTenantService {
 
   private getQueueRepository() {
     return this.getRepository(Queue);
+  }
+
+  private sortQueuesByPriority(queues: Queue[]): Queue[] {
+    const STATUS_PRIORITY: Partial<Record<QueueStatus, number>> = {
+      [QueueStatus.IN_CONSULTATION]: 1,
+      [QueueStatus.CALLED]: 2,
+      [QueueStatus.BOOKED]: 3,
+      [QueueStatus.SKIPPED]: 4,
+    };
+
+    const isSkipped = (q: Queue) => q.status === QueueStatus.SKIPPED;
+    const skipCount = (q: Queue) => q.counter?.skip ?? 0;
+
+    return [...queues].sort((a, b) => {
+      /* 1️⃣ Non-skipped before skipped */
+      if (isSkipped(a) !== isSkipped(b)) {
+        return Number(isSkipped(a)) - Number(isSkipped(b));
+      }
+
+      /* 2️⃣ Status priority (applies naturally to non-skipped) */
+      const statusDiff =
+        (STATUS_PRIORITY[a.status] ?? 999) - (STATUS_PRIORITY[b.status] ?? 999);
+      if (statusDiff !== 0) return statusDiff;
+
+      /* 3️⃣ Skip count (lower first) */
+      const skipDiff = skipCount(a) - skipCount(b);
+      if (skipDiff !== 0) return skipDiff;
+
+      /* 4️⃣ Sequence number (lower first) */
+      return a.sequenceNumber - b.sequenceNumber;
+    });
   }
 
   // check if a queue is already booked for the same doctor and patient for that date
@@ -258,8 +289,7 @@ export class QueueService extends BaseTenantService {
       withDeleted: true,
       relations: queueRelations,
       order: {
-        createdAt: 'DESC',
-        sequenceNumber: 'ASC',
+        aid: 'DESC',
       },
     });
 
@@ -343,7 +373,15 @@ export class QueueService extends BaseTenantService {
     };
   }
 
-  async getQueueForDoctor(doctorId: string, queueId?: string) {
+  async getQueueForDoctor({
+    doctorId,
+    queueId,
+    appointmentDate = new Date(),
+  }: {
+    doctorId: string;
+    queueId?: string;
+    appointmentDate?: Date;
+  }) {
     let requestedQueue: Queue | null = null;
 
     if (queueId) {
@@ -356,10 +394,12 @@ export class QueueService extends BaseTenantService {
       }
     }
 
+    console.debug(`[appointmentDate]: ${appointmentDate}`);
+
     const previousQueues = await this.getRepository(Queue).find({
       where: {
         doctorId,
-        createdAt: Between(todayStart, todayEnd),
+        appointmentDate: Equal(appointmentDate),
         status: In([QueueStatus.COMPLETED, QueueStatus.CANCELLED]),
       },
 
@@ -372,7 +412,7 @@ export class QueueService extends BaseTenantService {
     const nextQueues = await this.getRepository(Queue).find({
       where: {
         doctorId,
-        createdAt: Between(todayStart, todayEnd),
+        appointmentDate: Equal(appointmentDate),
         status: Not(
           In([
             QueueStatus.COMPLETED,
@@ -384,20 +424,18 @@ export class QueueService extends BaseTenantService {
       },
       relations: queueRelations,
       order: {
-        status: 'ASC',
-        counter: {
-          skip: 'ASC',
-        },
         sequenceNumber: 'ASC',
       },
     });
 
+    const sortedNextQueues = this.sortQueuesByPriority(nextQueues);
+
     // add the id of next queue in the each queue
     const next = queueId
-      ? nextQueues.filter((queue) => queue.id !== queueId)
-      : nextQueues.slice(1);
+      ? sortedNextQueues.filter((queue) => queue.id !== queueId)
+      : sortedNextQueues.slice(1);
 
-    const currentQueue = queueId ? requestedQueue : nextQueues[0];
+    const currentQueue = queueId ? requestedQueue : sortedNextQueues[0];
     const current = currentQueue
       ? {
           ...currentQueue,
@@ -414,6 +452,12 @@ export class QueueService extends BaseTenantService {
       next: next
         ? next.map((queue) => formatQueue(queue, this.request.user.role))
         : null,
+
+      metaData: {
+        appointmentDate: appointmentDate,
+        totalPrevious: previousQueues.length,
+        totalNext: next.length,
+      },
     };
   }
 

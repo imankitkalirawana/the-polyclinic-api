@@ -19,7 +19,6 @@ export function formatDoctor(doctor: Doctor, currentRole: Role) {
       targetRole: currentRole,
     }),
     image: doctor.user.image,
-    lastSequenceNumber: doctor.lastSequenceNumber,
     specialization: doctor.specialization,
     designation: doctor.designation,
     seating: doctor.seating,

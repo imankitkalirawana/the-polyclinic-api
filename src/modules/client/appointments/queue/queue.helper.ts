@@ -13,6 +13,7 @@ export function formatQueue(queue: FormattedQueue, role?: Role | null) {
     aid: queue.aid,
     status: queue.status,
     sequenceNumber: queue.sequenceNumber,
+    appointmentDate: queue.appointmentDate,
     notes: queue.notes,
     title: queue.title,
     prescription: queue.prescription,
