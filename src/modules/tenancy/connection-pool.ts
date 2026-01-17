@@ -35,4 +35,3 @@ export async function closeAllConnections(): Promise<void> {
     connections.delete(tenantSlug);
   }
 }
-

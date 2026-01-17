@@ -79,8 +79,13 @@ export class QueueController {
   getQueueForDoctor(
     @Param('doctorId') doctorId: string,
     @Query('id') queueId?: string,
+    @Query('date') date?: string,
   ) {
-    const queue = this.queueService.getQueueForDoctor(doctorId, queueId);
+    const queue = this.queueService.getQueueForDoctor({
+      doctorId,
+      queueId,
+      appointmentDate: date ? new Date(date) : new Date(),
+    });
     return queue;
   }
 

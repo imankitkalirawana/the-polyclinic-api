@@ -5,12 +5,14 @@ import { getTenantConnection } from '@/tenancy/connection-pool';
 import { TenantMigrationService } from '@/tenancy/services/tenant-migration.service';
 import { ActivityLog } from '../entities/activity-log.entity';
 import { ActivityLogPayload } from '../interfaces/activity-payload.interface';
+import { EntityType } from '../enums/entity-type.enum';
 import { TenantUser } from '@/client/users/entities/tenant-user.entity';
 
 @Injectable()
 export class ActivityListener {
   private readonly logger = new Logger(ActivityListener.name);
-  private static readonly CIRCULAR_LOG_PREVENTION_ENTITY = 'ActivityLog';
+  private static readonly CIRCULAR_LOG_PREVENTION_ENTITY =
+    EntityType.ACTIVITY_LOG;
 
   constructor(
     private readonly tenantMigrationService: TenantMigrationService,
@@ -67,6 +69,7 @@ export class ActivityListener {
         actor: actor,
         actorRole: payload.actorRole || null,
         description: payload.description || null,
+        stakeholders: payload.stakeholders || [],
       });
 
       await repository.save(activityLog);

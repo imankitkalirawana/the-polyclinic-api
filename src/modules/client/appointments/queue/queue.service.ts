@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
-import { Between, DataSource, In, MoreThanOrEqual, Not } from 'typeorm';
+import { Between, DataSource, Equal, In, MoreThanOrEqual, Not } from 'typeorm';
 import { Request } from 'express';
 import { CreateQueueDto } from './dto/create-queue.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
@@ -15,7 +15,13 @@ import { CONNECTION } from '@/tenancy/tenancy.symbols';
 import { TenantAuthInitService } from '@/tenancy/tenant-auth-init.service';
 import { Queue, QueueStatus } from './entities/queue.entity';
 import { Doctor } from '@/client/doctors/entities/doctor.entity';
-import { formatQueue, generateReferenceNumber } from './queue.helper';
+import {
+  formatQueue,
+  generateAppointmentId,
+  buildSequenceName,
+  ensureSequenceExists,
+  getNextTokenNumber,
+} from './queue.helper';
 import { CompleteQueueDto } from './dto/compelete-queue.dto';
 import { PaymentsService } from '@/client/payments/payments.service';
 import { VerifyPaymentDto } from '@/client/payments/dto/verify-payment.dto';
@@ -29,6 +35,7 @@ import { appointmentConfirmationTemplate } from './templates/confirm-appointment
 import { QrService } from '@/client/qr/qr.service';
 import { ActivityService } from '@/common/activity/services/activity.service';
 import { ActivityLogService } from '@/common/activity/services/activity-log.service';
+import { EntityType } from '@/common/activity/enums/entity-type.enum';
 
 const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
 const todayEnd = new Date(new Date().setHours(23, 59, 59, 999));
@@ -62,6 +69,37 @@ export class QueueService extends BaseTenantService {
     return this.getRepository(Queue);
   }
 
+  private sortQueuesByPriority(queues: Queue[]): Queue[] {
+    const STATUS_PRIORITY: Partial<Record<QueueStatus, number>> = {
+      [QueueStatus.IN_CONSULTATION]: 1,
+      [QueueStatus.CALLED]: 2,
+      [QueueStatus.BOOKED]: 3,
+      [QueueStatus.SKIPPED]: 4,
+    };
+
+    const isSkipped = (q: Queue) => q.status === QueueStatus.SKIPPED;
+    const skipCount = (q: Queue) => q.counter?.skip ?? 0;
+
+    return [...queues].sort((a, b) => {
+      /* 1️⃣ Non-skipped before skipped */
+      if (isSkipped(a) !== isSkipped(b)) {
+        return Number(isSkipped(a)) - Number(isSkipped(b));
+      }
+
+      /* 2️⃣ Status priority (applies naturally to non-skipped) */
+      const statusDiff =
+        (STATUS_PRIORITY[a.status] ?? 999) - (STATUS_PRIORITY[b.status] ?? 999);
+      if (statusDiff !== 0) return statusDiff;
+
+      /* 3️⃣ Skip count (lower first) */
+      const skipDiff = skipCount(a) - skipCount(b);
+      if (skipDiff !== 0) return skipDiff;
+
+      /* 4️⃣ Sequence number (lower first) */
+      return a.sequenceNumber - b.sequenceNumber;
+    });
+  }
+
   // check if a queue is already booked for the same doctor and patient for that date
   async checkIfQueueIsBooked(doctorId: string, patientId: string) {
     const queueRepository = this.getQueueRepository();
@@ -87,6 +125,12 @@ export class QueueService extends BaseTenantService {
 
     const doctor = await this.doctorsService.findOne(createQueueDto.doctorId);
 
+    if (!doctor.code) {
+      throw new BadRequestException(
+        'Doctor code is required for appointment booking',
+      );
+    }
+
     // start transaction
     const queryRunner = this.connection.createQueryRunner();
     await queryRunner.connect();
@@ -107,32 +151,43 @@ export class QueueService extends BaseTenantService {
         status = QueueStatus.PAYMENT_FAILED;
       }
 
+      // Get tenant schema name
+      const tenantSlug = this.getTenantSlug();
+
+      // Build sequence name for this doctor and appointment date
+      const sequenceName = buildSequenceName(
+        createQueueDto.doctorId,
+        createQueueDto.appointmentDate,
+      );
+
+      // Ensure sequence exists (with advisory lock protection)
+      await ensureSequenceExists(queryRunner, tenantSlug, sequenceName);
+
+      // Get next token number from sequence
+      const sequenceNumber = await getNextTokenNumber(
+        queryRunner,
+        tenantSlug,
+        sequenceName,
+      );
+
+      // Generate appointment ID (aid)
+      const aid = generateAppointmentId(
+        createQueueDto.appointmentDate,
+        doctor.code,
+        sequenceNumber,
+      );
+
       const queue = queryRunner.manager.create(Queue, {
         ...createQueueDto,
-        referenceNumber: generateReferenceNumber(),
-        sequenceNumber: doctor.lastSequenceNumber + 1 || 1,
+        aid,
+        sequenceNumber,
         status,
         bookedBy: this.request.user.userId,
       });
 
       await queryRunner.manager.save(Queue, queue);
 
-      await queryRunner.manager.increment(
-        Doctor,
-        { id: createQueueDto.doctorId },
-        'lastSequenceNumber',
-        1,
-      );
-
       await queryRunner.commitTransaction();
-      this.activityService.logCreate(
-        'Queue',
-        queue.id,
-        'appointments',
-        queue,
-        `Appointment created`,
-      );
-
       return queue;
     } catch (error) {
       this.logger.error(error);
@@ -184,12 +239,13 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus },
       after: { status: queue.status },
       description: `Payment verified and appointment status updated`,
+      stakeholders: [queue.patient.user.id, queue.doctor.user.id],
     });
 
     return queue;
@@ -207,12 +263,13 @@ export class QueueService extends BaseTenantService {
     await this.getQueueRepository().save(queue);
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus },
       after: { status: queue.status },
       description: `Appointment cancelled by ${this.request.user?.name || 'user'}.`,
+      stakeholders: [queue.patient.user.id, queue.doctor.user.id],
     });
     return queue;
   }
@@ -227,8 +284,7 @@ export class QueueService extends BaseTenantService {
       withDeleted: true,
       relations: queueRelations,
       order: {
-        createdAt: 'DESC',
-        sequenceNumber: 'ASC',
+        aid: 'DESC',
       },
     });
 
@@ -275,11 +331,12 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     this.activityService.logUpdate({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: previousData,
       after: queue,
+      stakeholders: [queue.patient.user.id, queue.doctor.user.id],
     });
 
     return {
@@ -299,20 +356,29 @@ export class QueueService extends BaseTenantService {
     }
 
     await queueRepository.remove(queue);
-    this.activityService.logDelete(
-      'Queue',
-      queue.id,
-      'appointments',
-      queue,
-      `Appointment deleted by ${this.request.user?.name || 'user'}.`,
-    );
+    this.activityService.logDelete({
+      entityType: EntityType.QUEUE,
+      entityId: queue.id,
+      module: 'appointments',
+      data: queue,
+      description: `Appointment deleted by ${this.request.user?.name || 'user'}.`,
+      stakeholders: [queue.patient.user.id, queue.doctor.user.id],
+    });
 
     return {
       message: 'Queue entry deleted successfully',
     };
   }
 
-  async getQueueForDoctor(doctorId: string, queueId?: string) {
+  async getQueueForDoctor({
+    doctorId,
+    queueId,
+    appointmentDate = new Date(),
+  }: {
+    doctorId: string;
+    queueId?: string;
+    appointmentDate?: Date;
+  }) {
     let requestedQueue: Queue | null = null;
 
     if (queueId) {
@@ -328,7 +394,7 @@ export class QueueService extends BaseTenantService {
     const previousQueues = await this.getRepository(Queue).find({
       where: {
         doctorId,
-        createdAt: Between(todayStart, todayEnd),
+        appointmentDate: Equal(appointmentDate),
         status: In([QueueStatus.COMPLETED, QueueStatus.CANCELLED]),
       },
 
@@ -341,7 +407,7 @@ export class QueueService extends BaseTenantService {
     const nextQueues = await this.getRepository(Queue).find({
       where: {
         doctorId,
-        createdAt: Between(todayStart, todayEnd),
+        appointmentDate: Equal(appointmentDate),
         status: Not(
           In([
             QueueStatus.COMPLETED,
@@ -353,20 +419,18 @@ export class QueueService extends BaseTenantService {
       },
       relations: queueRelations,
       order: {
-        status: 'ASC',
-        counter: {
-          skip: 'ASC',
-        },
         sequenceNumber: 'ASC',
       },
     });
 
+    const sortedNextQueues = this.sortQueuesByPriority(nextQueues);
+
     // add the id of next queue in the each queue
     const next = queueId
-      ? nextQueues.filter((queue) => queue.id !== queueId)
-      : nextQueues.slice(1);
+      ? sortedNextQueues.filter((queue) => queue.id !== queueId)
+      : sortedNextQueues.slice(1);
 
-    const currentQueue = queueId ? requestedQueue : nextQueues[0];
+    const currentQueue = queueId ? requestedQueue : sortedNextQueues[0];
     const current = currentQueue
       ? {
           ...currentQueue,
@@ -383,6 +447,12 @@ export class QueueService extends BaseTenantService {
       next: next
         ? next.map((queue) => formatQueue(queue, this.request.user.role))
         : null,
+
+      metaData: {
+        appointmentDate: appointmentDate,
+        totalPrevious: previousQueues.length,
+        totalNext: next.length,
+      },
     };
   }
 
@@ -411,12 +481,13 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus, counter: previousCounter },
       after: { status: queue.status, counter: queue.counter },
       description: `Patient called by ${this.request.user?.name || 'user'}.`,
+      stakeholders: [queue.patient.user.id, queue.doctor.user.id],
     });
 
     return formatQueue(queue, this.request.user.role);
@@ -452,12 +523,13 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus, counter: previousCounter },
       after: { status: queue.status, counter: queue.counter },
       description: `Appointment skipped by ${this.request.user?.name || 'user'}.`,
+      stakeholders: [queue.patient.user.id, queue.doctor.user.id],
     });
 
     return formatQueue(queue, this.request.user.role);
@@ -486,12 +558,13 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus, counter: previousCounter },
       after: { status: queue.status, counter: queue.counter },
       description: `Appointment clocked in by ${this.request.user?.name || 'user'}.`,
+      stakeholders: [queue.patient.user.id, queue.doctor.user.id],
     });
     return formatQueue(queue, this.request.user.role);
   }
@@ -526,12 +599,13 @@ export class QueueService extends BaseTenantService {
     });
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus },
       after: { status: queue.status },
       description: `Appointment completed by ${user.name || 'user'}.`,
+      stakeholders: [queue.patient.user.id, queue.doctor.user.id],
     });
 
     await queueRepository.save(queue);
@@ -543,7 +617,7 @@ export class QueueService extends BaseTenantService {
 
     const queue = await this.findOne(id);
 
-    const url = `${process.env.APP_URL}/appointments/queues/${queue.referenceNumber}`;
+    const url = `${process.env.APP_URL}/appointments/queues/${queue.aid}`;
 
     const qrCode = await this.qrService.generateBase64(url);
 
@@ -570,6 +644,9 @@ export class QueueService extends BaseTenantService {
   async getActivityLogs(queueId: string) {
     const queue = await this.findOne(queueId);
 
-    return this.activityLogService.getActivityLogsByEntity('Queue', queue.id);
+    return this.activityLogService.getActivityLogsByEntity(
+      EntityType.QUEUE,
+      queue.id,
+    );
   }
 }

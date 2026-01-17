@@ -117,7 +117,7 @@ export function appointmentConfirmationTemplate(queue: Queue, qrCode: string) {
   
       <div class="row">
         <div class="label">Reference Number</div>
-        <div class="value">${queue.referenceNumber}</div>
+        <div class="value">${queue.aid}</div>
       </div>
 
       <div class="row">

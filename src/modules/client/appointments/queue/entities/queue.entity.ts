@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -31,16 +32,22 @@ export interface Counter {
 }
 
 @Entity('appointment_queue')
+@Index(['doctorId', 'aid', 'appointmentDate', 'sequenceNumber'])
 export class Queue {
+
+  // ...
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({
     type: 'varchar',
-    length: 10,
+    length: 12,
     unique: true,
   })
-  referenceNumber: string;
+  aid: string;
+
+  @Column({ type: 'date', default: () => 'CURRENT_DATE' })
+  appointmentDate: Date;
 
   @Column({ type: 'uuid' })
   patientId: string;

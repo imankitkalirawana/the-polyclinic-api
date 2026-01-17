@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { ActivityAction } from '../enums/activity-action.enum';
 import { ActorType } from '../enums/actor-type.enum';
+import { EntityType } from '../enums/entity-type.enum';
 import { TenantUser } from '@/client/users/entities/tenant-user.entity';
 
 @Entity('activity_logs')
@@ -18,7 +19,7 @@ export class ActivityLog {
 
   @Column({ type: 'varchar', length: 255 })
   @Index()
-  entityType: string;
+  entityType: EntityType;
 
   @Column({ type: 'uuid' })
   @Index()
@@ -61,6 +62,10 @@ export class ActivityLog {
 
   @Column({ type: 'text', nullable: true })
   description: string | null;
+
+  @Column({ type: 'jsonb', nullable: true, default: [] })
+  @Index()
+  stakeholders: string[] | null;
 
   @CreateDateColumn({ type: 'timestamp with time zone' })
   @Index()

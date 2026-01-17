@@ -5,13 +5,15 @@ import {
   IsOptional,
   IsObject,
   ValidateIf,
+  IsArray,
 } from 'class-validator';
 import { ActivityAction } from '../enums/activity-action.enum';
 import { ActorType } from '../enums/actor-type.enum';
+import { EntityType } from '../enums/entity-type.enum';
 
 export class CreateActivityDto {
-  @IsString()
-  entityType: string;
+  @IsEnum(EntityType)
+  entityType: EntityType;
 
   @IsUUID()
   entityId: string;
@@ -49,5 +51,10 @@ export class CreateActivityDto {
   @IsOptional()
   @IsString()
   description?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  stakeholders?: string[] | null;
 }
 

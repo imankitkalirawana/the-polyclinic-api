@@ -1,10 +1,12 @@
 import {
+  IsDate,
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaymentMode } from '../enums/queue.enum';
 
 export class CreateQueueDto {
@@ -21,11 +23,16 @@ export class CreateQueueDto {
   @IsNotEmpty()
   doctorId: string;
 
-  @IsString()
-  @IsOptional()
-  notes?: string;
-
   @IsEnum(PaymentMode)
   @IsNotEmpty()
   paymentMode: PaymentMode;
+
+  @Type(() => Date)
+  @IsDate()
+  @IsNotEmpty()
+  appointmentDate: Date;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }
