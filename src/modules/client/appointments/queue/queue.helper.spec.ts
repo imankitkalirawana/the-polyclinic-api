@@ -3,7 +3,6 @@ import { Queue, QueueStatus } from './entities/queue.entity';
 import { PaymentMode } from './enums/queue.enum';
 import {
   formatQueue,
-  generateAid,
   generateAppointmentId,
   buildSequenceName,
   ensureSequenceExists,
@@ -101,7 +100,10 @@ describe('Queue Helper Functions', () => {
       const result = formatQueue(queue, Role.ADMIN);
 
       expect(result.doctor).toHaveProperty('id', 'doctor-123');
-      expect(result.doctor).toHaveProperty('specialization', 'General Medicine');
+      expect(result.doctor).toHaveProperty(
+        'specialization',
+        'General Medicine',
+      );
       expect(result.doctor).toHaveProperty('name', 'Test User');
     });
 
@@ -303,38 +305,6 @@ describe('Queue Helper Functions', () => {
     });
   });
 
-  describe('generateAid', () => {
-    it('should generate an aid with correct format (YYMMDD + random)', () => {
-      const aid = generateAid();
-
-      // Should be 10 characters: 6 date + 4 random
-      expect(aid).toHaveLength(10);
-
-      // First 6 characters should be numeric (YYMMDD)
-      const datePrefix = aid.slice(0, 6);
-      expect(datePrefix).toMatch(/^\d{6}$/);
-    });
-
-    it('should generate unique aids', () => {
-      const aids = new Set<string>();
-      for (let i = 0; i < 100; i++) {
-        aids.add(generateAid());
-      }
-      // Most should be unique (random collision is extremely unlikely)
-      expect(aids.size).toBeGreaterThan(95);
-    });
-
-    it('should include current date components', () => {
-      const aid = generateAid();
-      const now = new Date();
-      const year = now.getFullYear().toString().slice(-2);
-      const month = (now.getMonth() + 1).toString().padStart(2, '0');
-      const day = now.getDate().toString().padStart(2, '0');
-
-      expect(aid.startsWith(`${year}${month}${day}`)).toBe(true);
-    });
-  });
-
   describe('generateAppointmentId', () => {
     it('should generate appointment id with correct format', () => {
       const date = new Date('2026-01-17');
@@ -377,7 +347,9 @@ describe('Queue Helper Functions', () => {
 
       const result = buildSequenceName(doctorId, appointmentDate);
 
-      expect(result).toBe('seq_queue_7c9f3a2e123456789abcdef012345678_20260114');
+      expect(result).toBe(
+        'seq_queue_7c9f3a2e123456789abcdef012345678_20260114',
+      );
     });
 
     it('should remove all dashes from doctor id', () => {

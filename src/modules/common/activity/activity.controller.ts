@@ -1,22 +1,37 @@
-import { Controller, Get, Query, Req } from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import { IsEnum, IsUUID } from 'class-validator';
 import { ActivityLogService } from './services/activity-log.service';
 import { EntityType } from './enums/entity-type.enum';
 import { Request } from 'express';
+import { BearerAuthGuard } from '@/client/auth/guards/bearer-auth.guard';
+import { RolesGuard } from '@/client/auth/guards/roles.guard';
+import { Roles } from '@/client/auth/decorators/roles.decorator';
+import { Role } from 'src/common/enums/role.enum';
+
+class GetActivityLogsQueryDto {
+  @IsEnum(EntityType)
+  type: EntityType;
+
+  @IsUUID()
+  id: string;
+}
 
 @Controller('activity')
+@UseGuards(BearerAuthGuard, RolesGuard)
 export class ActivityController {
   constructor(private readonly activityLogService: ActivityLogService) {}
 
   @Get('logs')
-  async getActivityLogs(
-    @Query('type') type: EntityType,
-    @Query('id') id: string,
-  ) {
-    return this.activityLogService.getActivityLogsByEntity(type, id);
+  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
+  async getActivityLogs(@Query() query: GetActivityLogsQueryDto) {
+    return this.activityLogService.getActivityLogsByEntity(
+      query.type,
+      query.id,
+    );
   }
 
-  //   get by me
   @Get('logs/my')
+  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST, Role.PATIENT)
   async getActivityLogsByStakeholder(@Req() req: Request) {
     return this.activityLogService.getActivityLogsByStakeholder(
       req.user?.userId,
