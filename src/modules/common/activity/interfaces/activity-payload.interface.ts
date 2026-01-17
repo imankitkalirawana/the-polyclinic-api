@@ -1,8 +1,9 @@
 import { ActivityAction } from '../enums/activity-action.enum';
 import { ActorType } from '../enums/actor-type.enum';
+import { EntityType } from '../enums/entity-type.enum';
 
 export interface ActivityLogPayload {
-  entityType: string;
+  entityType: EntityType;
   entityId: string;
   module: string;
   action: ActivityAction;

@@ -6,6 +6,7 @@ import { BaseTenantService } from '@/tenancy/base-tenant.service';
 import { CONNECTION } from '@/tenancy/tenancy.symbols';
 import { TenantAuthInitService } from '@/tenancy/tenant-auth-init.service';
 import { ActivityLog } from '../entities/activity-log.entity';
+import { EntityType } from '../enums/entity-type.enum';
 import { TenantUser } from '@/client/users/entities/tenant-user.entity';
 import { getTenantConnection } from '@/tenancy/connection-pool';
 
@@ -19,7 +20,7 @@ export class ActivityLogService extends BaseTenantService {
     super(request, connection, tenantAuthInitService, ActivityLogService.name);
   }
 
-  async getActivityLogsByEntity(entityType: string, entityId: string) {
+  async getActivityLogsByEntity(entityType: EntityType, entityId: string) {
     await this.ensureTablesExist();
 
     const tenantSlug = this.getTenantSlug();

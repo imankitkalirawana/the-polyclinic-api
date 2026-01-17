@@ -5,11 +5,12 @@ import { Request } from 'express';
 import { CreateActivityDto } from '../dto/create-activity.dto';
 import { ActivityAction } from '../enums/activity-action.enum';
 import { ActorType } from '../enums/actor-type.enum';
+import { EntityType } from '../enums/entity-type.enum';
 import { diffObjects } from '../utils/diff.util';
 import { formatLabel } from 'src/common/utils/text-transform.util';
 
 interface LogUpdateOptions {
-  entityType: string;
+  entityType: EntityType;
   entityId: string;
   module: string;
   before: any;
@@ -19,7 +20,7 @@ interface LogUpdateOptions {
 }
 
 interface LogStatusChangeOptions {
-  entityType: string;
+  entityType: EntityType;
   entityId: string;
   module: string;
   before: any;
@@ -150,7 +151,7 @@ export class ActivityService {
     description,
     stakeholders,
   }: {
-    entityType: string;
+    entityType: EntityType;
     entityId: string;
     module: string;
     data: any;
@@ -179,7 +180,7 @@ export class ActivityService {
     description,
     stakeholders,
   }: {
-    entityType: string;
+    entityType: EntityType;
     entityId: string;
     module: string;
     data: any;
@@ -201,7 +202,7 @@ export class ActivityService {
   }
 
   logSoftDelete(
-    entityType: string,
+    entityType: EntityType,
     entityId: string,
     module: string,
     data: any,

@@ -35,6 +35,7 @@ import { appointmentConfirmationTemplate } from './templates/confirm-appointment
 import { QrService } from '@/client/qr/qr.service';
 import { ActivityService } from '@/common/activity/services/activity.service';
 import { ActivityLogService } from '@/common/activity/services/activity-log.service';
+import { EntityType } from '@/common/activity/enums/entity-type.enum';
 
 const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
 const todayEnd = new Date(new Date().setHours(23, 59, 59, 999));
@@ -188,7 +189,7 @@ export class QueueService extends BaseTenantService {
 
       await queryRunner.commitTransaction();
       this.activityService.logCreate({
-        entityType: 'Queue',
+        entityType: EntityType.QUEUE,
         entityId: queue.id,
         module: 'appointments',
         data: queue,
@@ -247,7 +248,7 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus },
@@ -271,7 +272,7 @@ export class QueueService extends BaseTenantService {
     await this.getQueueRepository().save(queue);
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus },
@@ -339,7 +340,7 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     this.activityService.logUpdate({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: previousData,
@@ -365,7 +366,7 @@ export class QueueService extends BaseTenantService {
 
     await queueRepository.remove(queue);
     this.activityService.logDelete({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       data: queue,
@@ -491,7 +492,7 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus, counter: previousCounter },
@@ -533,7 +534,7 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus, counter: previousCounter },
@@ -568,7 +569,7 @@ export class QueueService extends BaseTenantService {
     await queueRepository.save(queue);
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus, counter: previousCounter },
@@ -609,7 +610,7 @@ export class QueueService extends BaseTenantService {
     });
 
     this.activityService.logStatusChange({
-      entityType: 'Queue',
+      entityType: EntityType.QUEUE,
       entityId: queue.id,
       module: 'appointments',
       before: { status: previousStatus },
@@ -654,6 +655,9 @@ export class QueueService extends BaseTenantService {
   async getActivityLogs(queueId: string) {
     const queue = await this.findOne(queueId);
 
-    return this.activityLogService.getActivityLogsByEntity('Queue', queue.id);
+    return this.activityLogService.getActivityLogsByEntity(
+      EntityType.QUEUE,
+      queue.id,
+    );
   }
 }
