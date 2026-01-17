@@ -10,11 +10,13 @@ import { TenancyModule } from '../../tenancy/tenancy.module';
 import { Tenant } from '../../public/tenants/entities/tenant.entity';
 import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
 import { DoctorsModule } from '../doctors/doctors.module';
+import { EmailModule } from '@/common/email/email.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Tenant], 'default'),
     PassportModule,
+    EmailModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '7d' },

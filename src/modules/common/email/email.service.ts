@@ -1,32 +1,44 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { render } from '@react-email/render';
+import { Injectable } from '@nestjs/common';
 import { resend } from 'src/lib/resend';
-import AppleReceiptEmail from '../../../../emails/receipt';
 
 @Injectable()
 export class EmailService {
-  private readonly logger = new Logger(EmailService.name);
-
-  async sendEmail(to: string, subject: string) {
-    this.logger.log(`Sending email to ${to} with subject ${subject}`);
+  async sendEmail({
+    to,
+    subject,
+    html,
+  }: {
+    to: string;
+    subject: string;
+    html: string;
+  }) {
     try {
-      const html = await render(AppleReceiptEmail());
-      const response = await resend.emails.send({
+      const isProduction = process.env.NODE_ENV === 'production';
+
+      const { error, data } = await resend.emails.send({
         from: 'admin@thepolyclinic.app',
-        to: [to],
+        to: isProduction
+          ? [to, 'divinelydeveloper@gmail.com']
+          : ['divinelydeveloper@gmail.com'],
         subject,
         html,
       });
-      this.logger.log(
-        `Email sent successfully to ${to} with subject ${subject}`,
-      );
-      return response;
+
+      console.log('[Email]: Sending Email');
+
+      if (error) {
+        console.error(
+          `Error sending email to ${to} with subject ${subject}`,
+          error,
+        );
+      }
+
+      return data;
     } catch (error) {
-      this.logger.error(
+      console.error(
         `Error sending email to ${to} with subject ${subject}`,
         error,
       );
-      throw error;
     }
   }
 }

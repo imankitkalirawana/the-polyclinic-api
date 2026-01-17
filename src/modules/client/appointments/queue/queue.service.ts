@@ -29,6 +29,10 @@ import { appointmentConfirmationTemplate } from './templates/confirm-appointment
 import { QrService } from '@/client/qr/qr.service';
 import { ActivityService } from '@/common/activity/services/activity.service';
 import { ActivityLogService } from '@/common/activity/services/activity-log.service';
+import { EmailService } from '@/common/email/email.service';
+import { render } from '@react-email/render';
+import AppointmentEmail from 'emails/appointments/queue';
+import * as React from 'react';
 
 const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
 const todayEnd = new Date(new Date().setHours(23, 59, 59, 999));
@@ -54,6 +58,7 @@ export class QueueService extends BaseTenantService {
     private readonly qrService: QrService,
     private readonly activityService: ActivityService,
     private readonly activityLogService: ActivityLogService,
+    private readonly emailService: EmailService,
   ) {
     super(request, connection, tenantAuthInitService, QueueService.name);
   }
@@ -92,6 +97,8 @@ export class QueueService extends BaseTenantService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
+    let queue: Queue;
+
     try {
       let status: QueueStatus;
 
@@ -107,7 +114,7 @@ export class QueueService extends BaseTenantService {
         status = QueueStatus.PAYMENT_FAILED;
       }
 
-      const queue = queryRunner.manager.create(Queue, {
+      queue = queryRunner.manager.create(Queue, {
         ...createQueueDto,
         referenceNumber: generateReferenceNumber(),
         sequenceNumber: doctor.lastSequenceNumber + 1 || 1,
@@ -125,15 +132,6 @@ export class QueueService extends BaseTenantService {
       );
 
       await queryRunner.commitTransaction();
-      this.activityService.logCreate(
-        'Queue',
-        queue.id,
-        'appointments',
-        queue,
-        `Appointment created`,
-      );
-
-      return queue;
     } catch (error) {
       this.logger.error(error);
       await queryRunner.rollbackTransaction();
@@ -141,6 +139,37 @@ export class QueueService extends BaseTenantService {
     } finally {
       await queryRunner.release();
     }
+
+    const savedQueue = await this.findOne(queue.id);
+
+    const html = await render(
+      React.createElement(AppointmentEmail, {
+        appointmentId: savedQueue.referenceNumber,
+        patientName: savedQueue.patient?.user?.name,
+        patientNumber: savedQueue.patient?.user?.phone,
+        doctorName: doctor.user.name,
+        date: savedQueue.createdAt.toDateString(),
+        time: '10:30 AM',
+        location: 'The Polyclinic, MG Road, Agra',
+        documentNo: savedQueue.id.slice(-8).toUpperCase(),
+      }),
+    );
+
+    this.emailService.sendEmail({
+      to: savedQueue.patient.user.email,
+      subject: 'Appointment Confirmation',
+      html,
+    });
+
+    this.activityService.logCreate(
+      'Queue',
+      savedQueue.id,
+      'appointments',
+      savedQueue,
+      `Appointment created`,
+    );
+
+    return savedQueue;
   }
 
   async createPayment(queueId: string) {

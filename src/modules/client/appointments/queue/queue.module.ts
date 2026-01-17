@@ -10,7 +10,7 @@ import { PaymentsModule } from '../../payments/payments.module';
 import { PdfModule } from '../../pdf/pdf.module';
 import { DoctorsModule } from '../../doctors/doctors.module';
 import { QrModule } from '../../qr/qr.module';
-
+import { EmailService } from '@/common/email/email.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Tenant], 'default'),
@@ -22,7 +22,7 @@ import { QrModule } from '../../qr/qr.module';
     QrModule,
   ],
   controllers: [QueueController],
-  providers: [QueueService, TenantAuthInitService],
+  providers: [QueueService, EmailService, TenantAuthInitService],
   exports: [QueueService],
 })
 export class QueueModule {}

@@ -10,6 +10,11 @@ import {
 } from 'typeorm';
 import { TenantUser } from '../../users/entities/tenant-user.entity';
 
+export type DoctorTimings = {
+  startTime: string;
+  endTime: string;
+}[];
+
 @Entity('doctors')
 export class Doctor {
   @PrimaryGeneratedColumn('uuid')
@@ -48,6 +53,9 @@ export class Doctor {
 
   @Column({ default: 0 })
   currentSequenceNumber?: number;
+
+  @Column({ type: 'jsonb', nullable: true })
+  timings: DoctorTimings;
 
   @CreateDateColumn()
   createdAt: Date;
