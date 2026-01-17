@@ -188,15 +188,6 @@ export class QueueService extends BaseTenantService {
       await queryRunner.manager.save(Queue, queue);
 
       await queryRunner.commitTransaction();
-      this.activityService.logCreate({
-        entityType: EntityType.QUEUE,
-        entityId: queue.id,
-        module: 'appointments',
-        data: queue,
-        description: `Appointment created`,
-        stakeholders: [queue.patient.user.id, queue.doctor.user.id],
-      });
-
       return queue;
     } catch (error) {
       this.logger.error(error);
