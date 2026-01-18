@@ -8,22 +8,25 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { TenantUser } from '../../users/entities/tenant-user.entity';
+import { User } from '../../../common/users/entities/user.entity';
 
 @Entity('doctors')
 export class Doctor {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // References public.users table - cross-schema FK
   @Column({ type: 'uuid' })
   userId: string;
 
   @Column({ type: 'varchar', length: 3, unique: true, nullable: true })
   code?: string;
 
-  @OneToOne(() => TenantUser, (user) => user.id, { onDelete: 'CASCADE' })
+  // Note: This is a logical reference to public.users
+  // The actual FK constraint is handled at the database level
+  @OneToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
-  user: TenantUser;
+  user: User;
 
   @Column({ nullable: true })
   specialization?: string;

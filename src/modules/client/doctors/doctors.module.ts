@@ -2,11 +2,12 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DoctorsService } from './doctors.service';
 import { DoctorsController } from './doctors.controller';
-import { AuthModule } from '../auth/auth.module';
+import { AuthModule } from '../../common/auth/auth.module';
 import { TenancyModule } from '../../tenancy/tenancy.module';
-import { Tenant } from '../../public/tenants/entities/tenant.entity';
+import { Tenant } from '../../common/tenants/entities/tenant.entity';
 import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
-import { UsersModule } from '../users/users.module';
+import { UsersModule } from '../../common/users/users.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([Tenant], 'default'),

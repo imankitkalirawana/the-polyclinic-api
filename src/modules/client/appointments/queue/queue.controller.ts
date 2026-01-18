@@ -14,15 +14,15 @@ import {
 import { QueueService } from './queue.service';
 import { CreateQueueDto } from './dto/create-queue.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
-import { BearerAuthGuard } from '../../auth/guards/bearer-auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { FieldRestrictionsGuard } from '@/public/auth/guards/field-restrictions.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
+import { BearerAuthGuard } from '../../../common/auth/guards/bearer-auth.guard';
+import { RolesGuard } from '../../../common/auth/guards/roles.guard';
+import { FieldRestrictionsGuard } from '../../../common/auth/guards/field-restrictions.guard';
+import { Roles } from '../../../common/auth/decorators/roles.decorator';
 import { Role } from 'src/common/enums/role.enum';
 import {
   CurrentUser,
   CurrentUserPayload,
-} from '../../auth/decorators/current-user.decorator';
+} from '../../../common/auth/decorators/current-user.decorator';
 import { CompleteQueueDto } from './dto/compelete-queue.dto';
 import { VerifyPaymentDto } from '@/client/payments/dto/verify-payment.dto';
 import { Response } from 'express';

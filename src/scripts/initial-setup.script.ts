@@ -2,15 +2,11 @@ import './types';
 import { executeScript } from './script-runner.util';
 import { INestApplicationContext } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { UsersService as PublicUsersService } from '../modules/public/users/users.service';
-import { TenantsService } from '../modules/public/tenants/tenants.service';
+import { UsersService } from '../modules/common/users/users.service';
+import { TenantsService } from '../modules/common/tenants/tenants.service';
 import { TenantAuthInitService } from '../modules/tenancy/tenant-auth-init.service';
-import { getTenantConnectionConfig } from '../tenant-orm.config';
-import { TenantUser } from '../modules/client/users/entities/tenant-user.entity';
-import { PublicUser } from '../modules/public/auth/entities/public-user.entity';
+import { User } from '../modules/common/users/entities/user.entity';
 import { Role } from '../common/enums/role.enum';
-import { Status } from '../common/enums/status.enum';
-import * as bcrypt from 'bcryptjs';
 
 const SUPERADMIN_EMAIL = 'superadmin@polyclinic.com';
 const SUPERADMIN_NAME = 'Super Admin';
@@ -25,7 +21,7 @@ async function run(app: INestApplicationContext) {
   console.log('🚀 Starting initial setup...\n');
 
   // Get required services
-  const publicUsersService = app.get(PublicUsersService);
+  const usersService = app.get(UsersService);
   const tenantsService = app.get(TenantsService);
   const tenantAuthInitService = app.get(TenantAuthInitService);
   const dataSource = app.get(DataSource);
@@ -34,7 +30,7 @@ async function run(app: INestApplicationContext) {
   console.log('📝 Step 1: Creating superadmin user in public schema...');
   try {
     const existingSuperadmin = await dataSource
-      .getRepository(PublicUser)
+      .getRepository(User)
       .findOne({ where: { email: SUPERADMIN_EMAIL } });
 
     if (existingSuperadmin) {
@@ -42,7 +38,7 @@ async function run(app: INestApplicationContext) {
         `   ⚠️  Superadmin user with email ${SUPERADMIN_EMAIL} already exists. Skipping...`,
       );
     } else {
-      await publicUsersService.create({
+      await usersService.create({
         email: SUPERADMIN_EMAIL,
         password: SUPERADMIN_PASSWORD,
         name: SUPERADMIN_NAME,
@@ -104,60 +100,40 @@ async function run(app: INestApplicationContext) {
     throw error;
   }
 
-  // Step 4: Create admin user in tenant schema
-  console.log('\n📝 Step 4: Creating admin user in tenant schema...');
-  let tenantDataSource: DataSource | null = null;
+  // Step 4: Create admin user in public schema and add to tenant
+  console.log('\n📝 Step 4: Creating admin user and adding to tenant...');
   try {
-    // Create a DataSource connection to the tenant schema
-    const baseConfig = getTenantConnectionConfig(TENANT_SLUG);
-    // Ensure TenantUser entity is included - create new config object
-    const tenantConfig = {
-      ...baseConfig,
-      entities: [
-        TenantUser,
-        ...(Array.isArray(baseConfig.entities) ? baseConfig.entities : []),
-      ],
-    };
-    tenantDataSource = new DataSource(tenantConfig);
-    await tenantDataSource.initialize();
-
-    // Check if admin user already exists
-    const existingAdmin = await tenantDataSource
-      .getRepository(TenantUser)
+    const existingAdmin = await dataSource
+      .getRepository(User)
       .findOne({ where: { email: ADMIN_EMAIL } });
 
+    let adminUser;
     if (existingAdmin) {
       console.log(
-        `   ⚠️  Admin user with email ${ADMIN_EMAIL} already exists in tenant "${TENANT_SLUG}". Skipping...`,
+        `   ⚠️  Admin user with email ${ADMIN_EMAIL} already exists. Using existing user...`,
       );
+      adminUser = existingAdmin;
     } else {
-      // Hash password
-      const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10);
-
-      // Create admin user
-      const adminUser = tenantDataSource.getRepository(TenantUser).create({
+      adminUser = await usersService.create({
         email: ADMIN_EMAIL,
-        password: hashedPassword,
+        password: ADMIN_PASSWORD,
         name: ADMIN_NAME,
         role: Role.ADMIN,
-        status: Status.ACTIVE,
       });
-
-      await tenantDataSource.getRepository(TenantUser).save(adminUser);
       console.log(
-        `   ✅ Admin user created successfully in tenant "${TENANT_SLUG}"! Email: ${ADMIN_EMAIL}`,
+        `   ✅ Admin user created successfully! Email: ${ADMIN_EMAIL}`,
       );
     }
+
+    // Add admin user to tenant
+    await usersService.addUserToTenantBySlug(adminUser.id, TENANT_SLUG);
+    console.log(`   ✅ Admin user added to tenant "${TENANT_SLUG}"`);
   } catch (error) {
     console.error(
       '   ❌ Error creating admin user:',
       error instanceof Error ? error.message : String(error),
     );
     throw error;
-  } finally {
-    if (tenantDataSource && tenantDataSource.isInitialized) {
-      await tenantDataSource.destroy();
-    }
   }
 
   console.log('\n✨ Initial setup completed successfully!\n');

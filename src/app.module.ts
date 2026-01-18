@@ -1,25 +1,28 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 // import { APP_GUARD } from '@nestjs/core';
 // import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TenantsModule } from '@/public/tenants/tenants.module';
 import { publicOrmConfig } from './orm.config';
 import { DatabaseInitService } from './common/database-init.service';
-import { AuthModule as PublicAuthModule } from './modules/public/auth/auth.module';
-import { AuthModule as TenantedAuthModule } from './modules/client/auth/auth.module';
-import { UsersModule as PublicUsersModule } from './modules/public/users/users.module';
-import { UsersModule as TenantedUsersModule } from './modules/client/users/users.module';
-import { PatientsModule } from './modules/client/patients/patients.module';
-import { PaymentsModule } from './modules/client/payments/payments.module';
+// Common modules (centralized user management)
+import { AuthModule } from './modules/common/auth/auth.module';
+import { UsersModule } from './modules/common/users/users.module';
+import { PatientsModule } from './modules/common/patients/patients.module';
+import { TenantsModule } from './modules/common/tenants/tenants.module';
+// Tenant-specific modules
 import { DoctorsModule } from './modules/client/doctors/doctors.module';
 import { QueueModule } from './modules/client/appointments/queue/queue.module';
+import { PaymentsModule } from './modules/client/payments/payments.module';
+// Other common modules
 import { ActivityModule } from './modules/common/activity/activity.module';
 import { CronModule } from './modules/common/cron/cron.module';
 import { EmailModule } from './modules/common/email/email.module';
 import { LoggingModule } from './modules/common/logging/logging.module';
+// Middleware
+import { TenancyMiddleware } from './modules/tenancy/tenancy.middleware';
 import {
   StandardResponseModule,
   StandardResponseModuleOptions,
@@ -49,18 +52,19 @@ const options: StandardResponseModuleOptions = {};
     }),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1h' },
+      signOptions: { expiresIn: '7d' },
       global: true,
     }),
-    TenantsModule,
-    PublicAuthModule,
-    PublicUsersModule,
-    TenantedAuthModule,
-    TenantedUsersModule,
+    // Common modules (centralized user management in public schema)
+    AuthModule,
+    UsersModule,
     PatientsModule,
+    TenantsModule,
+    // Tenant-specific modules (doctors, appointments, payments in tenant schema)
     DoctorsModule,
     QueueModule,
     PaymentsModule,
+    // Other common modules
     ActivityModule,
     CronModule,
     EmailModule,
@@ -76,4 +80,8 @@ const options: StandardResponseModuleOptions = {};
     // },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TenancyMiddleware).forRoutes('*');
+  }
+}

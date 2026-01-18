@@ -9,7 +9,7 @@ import { Between, DataSource, Equal, In, MoreThanOrEqual, Not } from 'typeorm';
 import { Request } from 'express';
 import { CreateQueueDto } from './dto/create-queue.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
-import { CurrentUserPayload } from '@/client/auth/decorators/current-user.decorator';
+import { CurrentUserPayload } from '../../../common/auth/decorators/current-user.decorator';
 import { BaseTenantService } from '@/tenancy/base-tenant.service';
 import { CONNECTION } from '@/tenancy/tenancy.symbols';
 import { TenantAuthInitService } from '@/tenancy/tenant-auth-init.service';

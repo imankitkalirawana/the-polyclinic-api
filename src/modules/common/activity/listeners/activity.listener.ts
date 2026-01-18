@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { getTenantConnection } from '@/tenancy/connection-pool';
 import { TenantMigrationService } from '@/tenancy/services/tenant-migration.service';
 import { ActivityLog } from '../entities/activity-log.entity';
 import { ActivityLogPayload } from '../interfaces/activity-payload.interface';
 import { EntityType } from '../enums/entity-type.enum';
-import { TenantUser } from '@/client/users/entities/tenant-user.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Injectable()
 export class ActivityListener {
@@ -16,6 +17,8 @@ export class ActivityListener {
 
   constructor(
     private readonly tenantMigrationService: TenantMigrationService,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   @OnEvent('activity.log')
@@ -47,11 +50,11 @@ export class ActivityListener {
 
       const repository: Repository<ActivityLog> =
         connection.getRepository(ActivityLog);
-      const userRepository = connection.getRepository(TenantUser);
 
+      // User is now in public schema, use the injected repository
       let actor = null;
       if (payload.actorId && payload.actorType === 'USER') {
-        actor = await userRepository.findOne({
+        actor = await this.userRepository.findOne({
           where: { id: payload.actorId },
         });
       }

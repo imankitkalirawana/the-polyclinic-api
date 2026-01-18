@@ -1,7 +1,7 @@
 import './types';
 import { executeScript } from './script-runner.util';
 import { INestApplicationContext } from '@nestjs/common';
-import { UsersService } from '../modules/public/users/users.service';
+import { UsersService } from '../modules/common/users/users.service';
 
 async function run(app: INestApplicationContext) {
   const usersService = app.get(UsersService);

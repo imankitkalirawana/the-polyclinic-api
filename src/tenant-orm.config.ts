@@ -14,7 +14,11 @@ export function getTenantConnectionConfig(
     database: process.env.DB_NAME,
     schema: tenantSlug,
     entities: [
-      join(__dirname, './modules/client/**/entities/*.entity.{ts,js}'),
+      // Tenant-specific entities only (doctors, appointments, payments)
+      // Users, sessions, OTPs, and patients are now in public schema
+      join(__dirname, './modules/client/doctors/entities/*.entity.{ts,js}'),
+      join(__dirname, './modules/client/appointments/**/entities/*.entity.{ts,js}'),
+      join(__dirname, './modules/client/payments/entities/*.entity.{ts,js}'),
       ActivityLog,
     ],
     synchronize: true,

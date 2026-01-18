@@ -9,9 +9,9 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Patient } from '@/client/patients/entities/patient.entity';
+import { Patient } from '../../../../common/patients/entities/patient.entity';
 import { Doctor } from '@/client/doctors/entities/doctor.entity';
-import { TenantUser } from '@/client/users/entities/tenant-user.entity';
+import { User } from '../../../../common/users/entities/user.entity';
 import { PaymentMode } from '../enums/queue.enum';
 
 export enum QueueStatus {
@@ -77,12 +77,13 @@ export class Queue {
   @Column({ type: 'uuid', nullable: true })
   bookedBy: string;
 
-  @ManyToOne(() => TenantUser, (user) => user.id, {
+  // References public.users table - cross-schema FK
+  @ManyToOne(() => User, (user) => user.id, {
     onDelete: 'SET NULL',
     nullable: true,
   })
   @JoinColumn({ name: 'bookedBy' })
-  bookedByUser: TenantUser;
+  bookedByUser: User;
 
   @Column({ type: 'int' })
   sequenceNumber: number;
@@ -108,12 +109,13 @@ export class Queue {
   @Column({ type: 'timestamp with time zone', nullable: true })
   completedAt: Date;
 
-  @ManyToOne(() => TenantUser, (user) => user.id, {
+  // References public.users table - cross-schema FK
+  @ManyToOne(() => User, (user) => user.id, {
     onDelete: 'SET NULL',
     nullable: true,
   })
   @JoinColumn({ name: 'completedBy' })
-  completedByUser: TenantUser;
+  completedByUser: User;
 
   @Column({
     type: 'jsonb',

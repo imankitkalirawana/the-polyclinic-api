@@ -12,8 +12,8 @@ import { CONNECTION } from '../../tenancy/tenancy.symbols';
 import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
 import { Doctor } from './entities/doctor.entity';
 import { formatDoctor } from './doctors.helper';
-import { CreateUserDto } from '../users/dto/create-user.dto';
-import { UpdateUserDto } from '../users/dto/update-user.dto';
+import { CreateDoctorDto } from './dto/create-doctor.dto';
+import { UpdateDoctorDto } from './dto/update-doctor.dto';
 
 @Injectable()
 export class DoctorsService extends BaseTenantService {
@@ -29,12 +29,13 @@ export class DoctorsService extends BaseTenantService {
     return this.getRepository(Doctor);
   }
 
-  async create(createUserDto: CreateUserDto) {
-    if (!createUserDto.userId) {
+  async create(createDoctorDto: CreateDoctorDto) {
+    if (!createDoctorDto.userId) {
       throw new BadRequestException('User ID is required to create a doctor');
     }
 
-    return await this.getDoctorRepository().save(createUserDto);
+    const doctor = this.getDoctorRepository().create(createDoctorDto);
+    return await this.getDoctorRepository().save(doctor);
   }
 
   async findAll(search?: string) {
@@ -90,7 +91,7 @@ export class DoctorsService extends BaseTenantService {
   }
 
   // update doctor
-  async update(userId: string, updateUserDto: UpdateUserDto) {
+  async update(userId: string, updateDoctorDto: UpdateDoctorDto) {
     const doctorRepository = this.getDoctorRepository();
     const doctor = await doctorRepository.findOne({
       where: { userId },
@@ -98,7 +99,7 @@ export class DoctorsService extends BaseTenantService {
     if (!doctor) {
       throw new NotFoundException(`Doctor with user ID ${userId} not found`);
     }
-    Object.assign(doctor, updateUserDto);
+    Object.assign(doctor, updateDoctorDto);
     return await doctorRepository.save(doctor);
   }
 }
