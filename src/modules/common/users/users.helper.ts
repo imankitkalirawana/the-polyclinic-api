@@ -2,7 +2,7 @@ import { Role } from 'src/common/enums/role.enum';
 import { User } from './entities/user.entity';
 import { redactField } from 'src/common/utils/redact.util';
 
-export function formatUser(user: User, currentRole: Role) {
+export function formatUser(user: Omit<User, 'password'>, currentRole: Role) {
   return {
     id: user.id,
     name: user.name,

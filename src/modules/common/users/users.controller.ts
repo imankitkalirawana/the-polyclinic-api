@@ -44,13 +44,13 @@ export class UsersController {
   ) {
     const user = await this.usersService.create(createUserDto);
     params.setMessage(`${formatLabel(user.role)} created successfully`);
-    return formatUser(user as any, req.user.role);
+    return formatUser(user, req.user.role);
   }
 
   @Get('me')
   async getMe(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
     const foundUser = await this.usersService.findOne(user.userId);
-    return formatUser(foundUser as any, req.user.role);
+    return formatUser(foundUser, req.user.role);
   }
 
   @Get()
@@ -146,7 +146,7 @@ export class UsersController {
   ) {
     const user = await this.usersService.update(id, updateUserDto);
     params.setMessage(`${formatLabel(user.role)} updated successfully`);
-    return formatUser(user as any, req.user.role);
+    return formatUser(user, req.user.role);
   }
 
   @Delete(':id/soft-remove')
