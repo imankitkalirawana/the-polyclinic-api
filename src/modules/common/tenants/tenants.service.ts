@@ -97,7 +97,10 @@ export class TenantsService implements OnModuleInit {
     return tenant;
   }
 
-  async update(slug: string, updateTenantDto: UpdateTenantDto): Promise<Tenant> {
+  async update(
+    slug: string,
+    updateTenantDto: UpdateTenantDto,
+  ): Promise<Tenant> {
     const tenant = await this.findOne(slug);
 
     await this.tenantRepository.update(tenant.id, updateTenantDto);

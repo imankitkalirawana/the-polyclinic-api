@@ -3,7 +3,6 @@ import {
   IsString,
   IsOptional,
   IsEnum,
-  IsUUID,
   MinLength,
 } from 'class-validator';
 import { Role } from 'src/common/enums/role.enum';

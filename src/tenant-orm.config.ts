@@ -17,7 +17,10 @@ export function getTenantConnectionConfig(
       // Tenant-specific entities only (doctors, appointments, payments)
       // Users, sessions, OTPs, and patients are now in public schema
       join(__dirname, './modules/client/doctors/entities/*.entity.{ts,js}'),
-      join(__dirname, './modules/client/appointments/**/entities/*.entity.{ts,js}'),
+      join(
+        __dirname,
+        './modules/client/appointments/**/entities/*.entity.{ts,js}',
+      ),
       join(__dirname, './modules/client/payments/entities/*.entity.{ts,js}'),
       ActivityLog,
     ],

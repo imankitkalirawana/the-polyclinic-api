@@ -15,7 +15,10 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 import { BearerAuthGuard } from '../auth/guards/bearer-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../auth/decorators/current-user.decorator';
 import { Role } from 'src/common/enums/role.enum';
 import { StandardParam, StandardParams } from 'nest-standard-response';
 import { formatPatient } from './patients.helper';

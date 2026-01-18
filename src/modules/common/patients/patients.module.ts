@@ -1,6 +1,5 @@
 import { Module, Scope } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { REQUEST } from '@nestjs/core';
 import { PatientsController } from './patients.controller';
 import { PatientsService } from './patients.service';
 import { Patient } from './entities/patient.entity';

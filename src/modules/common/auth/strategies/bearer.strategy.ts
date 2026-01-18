@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -104,7 +104,7 @@ export class BearerStrategy extends PassportStrategy(Strategy, 'bearer') {
         });
         doctorId = doctor?.id || null;
       } catch (error) {
-        // Doctor not found in tenant schema is okay
+        console.error(error);
       }
     }
 

@@ -178,7 +178,9 @@ describe('QueueService', () => {
     service = module.get<QueueService>(QueueService);
 
     // Mock internal methods
-    jest.spyOn(service as any, 'ensureTablesExist').mockResolvedValue(undefined);
+    jest
+      .spyOn(service as any, 'ensureTablesExist')
+      .mockResolvedValue(undefined);
     jest.spyOn(service as any, 'getRepository').mockImplementation((entity) => {
       if (entity === Queue) return mockQueueRepository;
       if (entity === Doctor) return mockDoctorRepository;
@@ -197,7 +199,10 @@ describe('QueueService', () => {
       const mockQueue = createMockQueue();
       (mockQueueRepository.findOne as jest.Mock).mockResolvedValue(mockQueue);
 
-      const result = await service.checkIfQueueIsBooked('doctor-123', 'patient-123');
+      const result = await service.checkIfQueueIsBooked(
+        'doctor-123',
+        'patient-123',
+      );
 
       expect(result).toEqual(mockQueue);
       expect(mockQueueRepository.findOne).toHaveBeenCalledWith({
@@ -211,7 +216,10 @@ describe('QueueService', () => {
     it('should return null if no existing booking found', async () => {
       (mockQueueRepository.findOne as jest.Mock).mockResolvedValue(null);
 
-      const result = await service.checkIfQueueIsBooked('doctor-123', 'patient-123');
+      const result = await service.checkIfQueueIsBooked(
+        'doctor-123',
+        'patient-123',
+      );
 
       expect(result).toBeNull();
     });
@@ -243,7 +251,10 @@ describe('QueueService', () => {
 
   describe('findAll', () => {
     it('should return formatted list of queues', async () => {
-      const mockQueues = [createMockQueue(), createMockQueue({ id: 'queue-456' })];
+      const mockQueues = [
+        createMockQueue(),
+        createMockQueue({ id: 'queue-456' }),
+      ];
       (mockQueueRepository.find as jest.Mock).mockResolvedValue(mockQueues);
 
       const result = await service.findAll();
@@ -273,7 +284,9 @@ describe('QueueService', () => {
       jest.spyOn(service, 'findOne').mockResolvedValue(mockQueue as Queue);
       (mockQueueRepository.save as jest.Mock).mockResolvedValue(mockQueue);
 
-      const result = await service.update('queue-123', { notes: 'Updated notes' });
+      const result = await service.update('queue-123', {
+        notes: 'Updated notes',
+      });
 
       expect(result.message).toBe('Queue entry updated successfully');
       expect(mockQueueRepository.save).toHaveBeenCalled();
@@ -390,7 +403,9 @@ describe('QueueService', () => {
     });
 
     it('should allow skipping from IN_CONSULTATION status', async () => {
-      const mockQueue = createMockQueue({ status: QueueStatus.IN_CONSULTATION });
+      const mockQueue = createMockQueue({
+        status: QueueStatus.IN_CONSULTATION,
+      });
       jest.spyOn(service, 'findOne').mockResolvedValue(mockQueue as Queue);
       (mockQueueRepository.save as jest.Mock).mockImplementation((q) => q);
 
@@ -453,7 +468,9 @@ describe('QueueService', () => {
     } as any;
 
     it('should complete appointment queue', async () => {
-      const mockQueue = createMockQueue({ status: QueueStatus.IN_CONSULTATION });
+      const mockQueue = createMockQueue({
+        status: QueueStatus.IN_CONSULTATION,
+      });
       jest.spyOn(service, 'findOne').mockResolvedValue(mockQueue as Queue);
       (mockQueueRepository.save as jest.Mock).mockImplementation((q) => q);
 
@@ -510,7 +527,9 @@ describe('QueueService', () => {
 
   describe('cancelPayment', () => {
     it('should cancel queue and set status to CANCELLED', async () => {
-      const mockQueue = createMockQueue({ status: QueueStatus.PAYMENT_PENDING });
+      const mockQueue = createMockQueue({
+        status: QueueStatus.PAYMENT_PENDING,
+      });
       jest.spyOn(service, 'findOne').mockResolvedValue(mockQueue as Queue);
       (mockQueueRepository.save as jest.Mock).mockImplementation((q) => q);
 
@@ -527,7 +546,9 @@ describe('QueueService', () => {
       const mockQueue = createMockQueue();
       const mockPayment = { id: 'payment-123', amount: 10000 };
       (mockQueueRepository.findOne as jest.Mock).mockResolvedValue(mockQueue);
-      (mockPaymentsService.createPayment as jest.Mock).mockResolvedValue(mockPayment);
+      (mockPaymentsService.createPayment as jest.Mock).mockResolvedValue(
+        mockPayment,
+      );
 
       const result = await service.createPayment('queue-123');
 
@@ -552,8 +573,12 @@ describe('QueueService', () => {
   describe('verifyPayment', () => {
     it('should verify payment and update queue status to BOOKED', async () => {
       const mockPayment = { referenceId: 'queue-123' };
-      const mockQueue = createMockQueue({ status: QueueStatus.PAYMENT_PENDING });
-      (mockPaymentsService.verifyPayment as jest.Mock).mockResolvedValue(mockPayment);
+      const mockQueue = createMockQueue({
+        status: QueueStatus.PAYMENT_PENDING,
+      });
+      (mockPaymentsService.verifyPayment as jest.Mock).mockResolvedValue(
+        mockPayment,
+      );
       (mockQueueRepository.findOne as jest.Mock).mockResolvedValue(mockQueue);
       (mockQueueRepository.save as jest.Mock).mockImplementation((q) => q);
 
@@ -571,7 +596,9 @@ describe('QueueService', () => {
 
     it('should throw NotFoundException if queue not found after payment verification', async () => {
       const mockPayment = { referenceId: 'non-existent' };
-      (mockPaymentsService.verifyPayment as jest.Mock).mockResolvedValue(mockPayment);
+      (mockPaymentsService.verifyPayment as jest.Mock).mockResolvedValue(
+        mockPayment,
+      );
       (mockQueueRepository.findOne as jest.Mock).mockResolvedValue(null);
 
       const verifyDto = {
@@ -591,17 +618,16 @@ describe('QueueService', () => {
       const mockQueue = createMockQueue();
       const mockLogs = [{ id: 'log-1' }, { id: 'log-2' }];
       jest.spyOn(service, 'findOne').mockResolvedValue(mockQueue as Queue);
-      (mockActivityLogService.getActivityLogsByEntity as jest.Mock).mockResolvedValue(
-        mockLogs,
-      );
+      (
+        mockActivityLogService.getActivityLogsByEntity as jest.Mock
+      ).mockResolvedValue(mockLogs);
 
       const result = await service.getActivityLogs('queue-123');
 
       expect(result).toEqual(mockLogs);
-      expect(mockActivityLogService.getActivityLogsByEntity).toHaveBeenCalledWith(
-        EntityType.QUEUE,
-        'queue-123',
-      );
+      expect(
+        mockActivityLogService.getActivityLogsByEntity,
+      ).toHaveBeenCalledWith(EntityType.QUEUE, 'queue-123');
     });
   });
 

@@ -57,4 +57,3 @@ export class CreateActivityDto {
   @IsUUID(undefined, { each: true })
   stakeholders?: string[] | null;
 }
-

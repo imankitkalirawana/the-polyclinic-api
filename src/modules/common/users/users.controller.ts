@@ -19,7 +19,10 @@ import { BearerAuthGuard } from '../auth/guards/bearer-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { FieldRestrictionsGuard } from '../auth/guards/field-restrictions.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../auth/decorators/current-user.decorator';
 import { AllowFields } from '../auth/decorators/allow-fields.decorator';
 import { RestrictFields } from '../auth/decorators/restrict-fields.decorator';
 import { Role } from 'src/common/enums/role.enum';
@@ -51,13 +54,25 @@ export class UsersController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.SUPERADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
+  @Roles(
+    Role.ADMIN,
+    Role.SUPERADMIN,
+    Role.DOCTOR,
+    Role.NURSE,
+    Role.RECEPTIONIST,
+  )
   async findAll(@Query() queryDto: QueryUserDto) {
     return this.usersService.findAll(queryDto);
   }
 
   @Get('tenant/:tenantSlug')
-  @Roles(Role.ADMIN, Role.SUPERADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
+  @Roles(
+    Role.ADMIN,
+    Role.SUPERADMIN,
+    Role.DOCTOR,
+    Role.NURSE,
+    Role.RECEPTIONIST,
+  )
   async findByTenant(
     @Param('tenantSlug') tenantSlug: string,
     @Query('search') search?: string,
@@ -66,7 +81,13 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.SUPERADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
+  @Roles(
+    Role.ADMIN,
+    Role.SUPERADMIN,
+    Role.DOCTOR,
+    Role.NURSE,
+    Role.RECEPTIONIST,
+  )
   async findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
