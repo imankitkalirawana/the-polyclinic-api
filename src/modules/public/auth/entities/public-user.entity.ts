@@ -7,7 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Session } from './session.entity';
-import { SystemRole } from 'src/common/enums/role.enum';
+import { Role } from 'src/common/enums/role.enum';
 
 @Entity('users')
 export class PublicUser {
@@ -25,10 +25,10 @@ export class PublicUser {
 
   @Column({
     type: 'enum',
-    enum: SystemRole,
-    default: SystemRole.OPS,
+    enum: Role,
+    default: Role.OPS,
   })
-  role: SystemRole;
+  role: Role;
 
   @OneToMany(() => Session, (session) => session.user)
   sessions: Session[];

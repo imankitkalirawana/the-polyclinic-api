@@ -10,6 +10,8 @@ export interface CurrentUserPayload {
   tenantSlug: string;
   name: string;
   phone: string | null;
+  patientId?: string | null;
+  doctorId?: string | null;
 }
 
 export const CurrentUser = createParamDecorator(

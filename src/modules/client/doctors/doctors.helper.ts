@@ -20,6 +20,7 @@ export function formatDoctor(doctor: Doctor, currentRole: Role) {
     }),
     image: doctor.user.image,
     specialization: doctor.specialization,
+    education: doctor.education,
     designation: doctor.designation,
     seating: doctor.seating,
     experience: doctor.experience,

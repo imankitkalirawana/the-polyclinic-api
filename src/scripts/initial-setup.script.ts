@@ -8,7 +8,7 @@ import { TenantAuthInitService } from '../modules/tenancy/tenant-auth-init.servi
 import { getTenantConnectionConfig } from '../tenant-orm.config';
 import { TenantUser } from '../modules/client/users/entities/tenant-user.entity';
 import { PublicUser } from '../modules/public/auth/entities/public-user.entity';
-import { Role, SystemRole } from '../common/enums/role.enum';
+import { Role } from '../common/enums/role.enum';
 import { Status } from '../common/enums/status.enum';
 import * as bcrypt from 'bcryptjs';
 
@@ -46,7 +46,7 @@ async function run(app: INestApplicationContext) {
         email: SUPERADMIN_EMAIL,
         password: SUPERADMIN_PASSWORD,
         name: SUPERADMIN_NAME,
-        role: SystemRole.SUPERADMIN,
+        role: Role.SUPERADMIN,
       });
       console.log(
         `   ✅ Superadmin user created successfully! Email: ${SUPERADMIN_EMAIL}`,

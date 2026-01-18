@@ -87,6 +87,18 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  @Post('/:id/reset-password')
+  @Roles(Role.ADMIN)
+  async resetPassword(
+    @StandardParam() params: StandardParams,
+    @Param('id') id: string,
+    @Body() { password }: { password: string },
+  ) {
+    await this.usersService.resetPassword(id, password);
+    params.setMessage(`Password reset successfully`);
+    return null;
+  }
+
   @Patch(':id')
   @Roles(Role.ADMIN, Role.DOCTOR)
   @AllowFields({

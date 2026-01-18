@@ -13,6 +13,8 @@ declare global {
       sessionId: string;
       type: 'tenant';
       tenantSlug: string;
+      patientId?: string | null;
+      doctorId?: string | null;
     }
 
     interface Request {

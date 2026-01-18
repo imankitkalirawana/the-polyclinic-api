@@ -277,8 +277,14 @@ export class QueueService extends BaseTenantService {
   async findAll(date?: string) {
     await this.ensureTablesExist();
 
+    console.log(
+      `[findAll] user: ${JSON.stringify(this.request.user, null, 2)}`,
+    );
+
     const qb = await this.getRepository(Queue).find({
       where: {
+        patientId: this.request.user.patientId,
+        doctorId: this.request.user.doctorId,
         createdAt: date ? MoreThanOrEqual(new Date(date)) : undefined,
       },
       withDeleted: true,
@@ -295,7 +301,11 @@ export class QueueService extends BaseTenantService {
     await this.ensureTablesExist();
 
     const queue = await this.getQueueRepository().findOne({
-      where: { id },
+      where: {
+        id,
+        patientId: this.request.user.patientId,
+        doctorId: this.request.user.doctorId,
+      },
       withDeleted: true,
       relations: queueRelations,
     });
@@ -305,6 +315,23 @@ export class QueueService extends BaseTenantService {
     }
 
     return queue;
+  }
+
+  async findByAid(aid: string) {
+    await this.ensureTablesExist();
+
+    const queue = await this.getQueueRepository().findOne({
+      where: {
+        aid,
+        patientId: this.request.user.patientId,
+        doctorId: this.request.user.doctorId,
+      },
+      relations: queueRelations,
+    });
+    if (!queue) {
+      throw new NotFoundException(`Queue with AID ${aid} not found`);
+    }
+    return formatQueue(queue, this.request.user.role);
   }
 
   async update(id: string, updateQueueDto: UpdateQueueDto) {

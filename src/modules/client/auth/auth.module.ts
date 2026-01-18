@@ -10,6 +10,7 @@ import { TenancyModule } from '../../tenancy/tenancy.module';
 import { Tenant } from '../../public/tenants/entities/tenant.entity';
 import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
 import { DoctorsModule } from '../doctors/doctors.module';
+import { PatientsModule } from '../patients/patients.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { DoctorsModule } from '../doctors/doctors.module';
     }),
     TenancyModule,
     forwardRef(() => DoctorsModule),
+    forwardRef(() => PatientsModule),
   ],
   controllers: [AuthController],
   providers: [AuthService, BearerStrategy, RolesGuard, TenantAuthInitService],

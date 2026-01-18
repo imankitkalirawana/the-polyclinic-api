@@ -5,6 +5,9 @@ import { Request } from 'express';
 import { getTenantConnection } from '../../../tenancy/connection-pool';
 import { Session } from '../entities/session.entity';
 import { TenantUser } from '../../users/entities/tenant-user.entity';
+import { Patient } from '../../patients/entities/patient.entity';
+import { Doctor } from '../../doctors/entities/doctor.entity';
+import { Role } from '../../../../common/enums/role.enum';
 
 export interface JwtPayload {
   sessionId: string;
@@ -80,6 +83,24 @@ export class BearerStrategy extends PassportStrategy(
       throw new UnauthorizedException('User not found');
     }
 
+    // Fetch patientId or doctorId based on user role
+    let patientId: string | null = null;
+    let doctorId: string | null = null;
+
+    if (user.role === Role.PATIENT) {
+      const patientRepository = connection.getRepository(Patient);
+      const patient = await patientRepository.findOne({
+        where: { userId: user.id },
+      });
+      patientId = patient?.id;
+    } else if (user.role === Role.DOCTOR) {
+      const doctorRepository = connection.getRepository(Doctor);
+      const doctor = await doctorRepository.findOne({
+        where: { userId: user.id },
+      });
+      doctorId = doctor?.id;
+    }
+
     return {
       userId: user.id,
       email: user.email,
@@ -89,6 +110,8 @@ export class BearerStrategy extends PassportStrategy(
       tenantSlug,
       name: user.name,
       phone: user.phone,
+      patientId,
+      doctorId,
     };
   }
 }

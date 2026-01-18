@@ -69,9 +69,15 @@ export class QueueController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
+  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST, Role.PATIENT)
   findAll(@Query('date') date?: string) {
     return this.queueService.findAll(date);
+  }
+
+  @Get('aid/:aid')
+  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST, Role.PATIENT)
+  findByAid(@Param('aid') aid: string) {
+    return this.queueService.findByAid(aid);
   }
 
   @Get('doctor/:doctorId/queue')

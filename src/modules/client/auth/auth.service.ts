@@ -24,6 +24,8 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { Role } from 'src/scripts/types';
 import { DoctorsService } from '../doctors/doctors.service';
 import { Doctor } from '../doctors/entities/doctor.entity';
+import { Patient } from '../patients/entities/patient.entity';
+import { PatientsService } from '../patients/patients.service';
 
 @Injectable()
 export class AuthService {
@@ -36,6 +38,7 @@ export class AuthService {
     private doctorsService: DoctorsService,
     private jwtService: JwtService,
     private tenantAuthInitService: TenantAuthInitService,
+    private patientsService: PatientsService,
   ) {}
 
   private getTenantSlug(): string {
@@ -369,10 +372,15 @@ export class AuthService {
     }
 
     let doctor: Doctor | null = null;
+    let patient: Patient | null = null;
+
+    if (user.role === Role.PATIENT) {
+      patient = await this.patientsService.findByUserId(user.id);
+    }
     if (user.role === Role.DOCTOR) {
       doctor = await this.doctorsService.findByUserId(user.id);
     }
 
-    return { user: { ...user, doctorId: doctor?.id } };
+    return { user: { ...user, doctorId: doctor?.id, patientId: patient?.id } };
   }
 }

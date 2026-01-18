@@ -8,17 +8,3 @@ export enum Role {
   NURSE = 'NURSE',
   RECEPTIONIST = 'RECEPTIONIST',
 }
-
-export enum SystemRole {
-  SUPERADMIN = 'SUPERADMIN',
-  MODERATOR = 'MODERATOR',
-  OPS = 'OPS',
-}
-
-export enum ClientRole {
-  ADMIN = 'ADMIN',
-  PATIENT = 'PATIENT',
-  DOCTOR = 'DOCTOR',
-  NURSE = 'NURSE',
-  RECEPTIONIST = 'RECEPTIONIST',
-}

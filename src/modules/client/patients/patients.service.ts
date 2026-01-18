@@ -68,7 +68,7 @@ export class PatientsService extends BaseTenantService {
       throw new NotFoundException(`Patient with user ID ${userId} not found`);
     }
 
-    return formatPatient(patient);
+    return patient;
   }
 
   async findOne(id: string) {
@@ -82,7 +82,7 @@ export class PatientsService extends BaseTenantService {
       throw new NotFoundException(`Patient with ID ${id} not found`);
     }
 
-    return formatPatient(patient);
+    return patient;
   }
 
   async update(userId: string, updatePatientDto: UpdatePatientDto) {

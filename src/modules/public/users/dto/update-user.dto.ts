@@ -1,5 +1,5 @@
 import { IsEmail, IsString, IsOptional, IsEnum } from 'class-validator';
-import { SystemRole } from 'src/common/enums/role.enum';
+import { Role } from 'src/common/enums/role.enum';
 
 export class UpdateUserDto {
   @IsEmail()
@@ -14,7 +14,7 @@ export class UpdateUserDto {
   @IsOptional()
   name?: string;
 
-  @IsEnum(SystemRole)
+  @IsEnum(Role)
   @IsOptional()
-  role?: SystemRole;
+  role?: Role.SUPERADMIN;
 }

@@ -121,6 +121,25 @@ export class UsersService {
     return user;
   }
 
+  // reset password (admin can reset password for any user)
+  async resetPassword(id: string, password: string) {
+    await this.ensureTablesExist();
+    const userRepository = this.getUserRepository();
+    const user = await userRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User with this ID does not exist');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
+    await userRepository.save(user);
+
+    return { message: 'Password reset successfully' };
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto) {
     const userRepository = this.getUserRepository();
     const user = await userRepository.findOne({
