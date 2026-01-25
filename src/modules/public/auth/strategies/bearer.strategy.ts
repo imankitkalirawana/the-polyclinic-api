@@ -5,12 +5,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Session } from '../entities/session.entity';
 import { PublicUser } from '../entities/public-user.entity';
+import { Role } from 'src/common/enums/role.enum';
 
 export interface JwtPayload {
   sessionId: string;
   userId: string;
   email: string;
-  role: string;
+  role: Role;
   type: 'public';
 }
 

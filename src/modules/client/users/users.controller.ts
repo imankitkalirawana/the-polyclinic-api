@@ -128,7 +128,7 @@ export class UsersController {
       await this.patientsService.update(id, updateUserDto);
     }
 
-    params.setMessage(`${formatLabel(user.role)} updated successfully`);
+    params.setMessage(`${formatLabel(user.role as Role)} updated successfully`);
     const updatedUser = await this.usersService.findOne(id);
 
     return formatUser(updatedUser, req.user.role);

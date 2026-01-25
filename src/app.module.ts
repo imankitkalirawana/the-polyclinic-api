@@ -8,9 +8,7 @@ import { AppService } from './app.service';
 import { TenantsModule } from '@/public/tenants/tenants.module';
 import { publicOrmConfig } from './orm.config';
 import { DatabaseInitService } from './common/database-init.service';
-import { AuthModule as PublicAuthModule } from './modules/public/auth/auth.module';
 import { AuthModule as TenantedAuthModule } from './modules/client/auth/auth.module';
-import { UsersModule as PublicUsersModule } from './modules/public/users/users.module';
 import { UsersModule as TenantedUsersModule } from './modules/client/users/users.module';
 import { PatientsModule } from './modules/client/patients/patients.module';
 import { PaymentsModule } from './modules/client/payments/payments.module';
@@ -20,6 +18,7 @@ import { ActivityModule } from './modules/common/activity/activity.module';
 import { CronModule } from './modules/common/cron/cron.module';
 import { EmailModule } from './modules/common/email/email.module';
 import { LoggingModule } from './modules/common/logging/logging.module';
+import { UsersModule } from './modules/auth/users/users.module';
 import {
   StandardResponseModule,
   StandardResponseModuleOptions,
@@ -53,10 +52,9 @@ const options: StandardResponseModuleOptions = {};
       global: true,
     }),
     TenantsModule,
-    PublicAuthModule,
-    PublicUsersModule,
     TenantedAuthModule,
     TenantedUsersModule,
+    UsersModule,
     PatientsModule,
     DoctorsModule,
     QueueModule,
