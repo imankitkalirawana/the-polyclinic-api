@@ -40,7 +40,7 @@ export class TenantMiddleware implements NestMiddleware {
       throw new BadRequestException('x-tenant is reserved');
     }
 
-    (req as any).tenantSlug = schema;
+    req.tenantSlug = schema;
     return next();
   }
 }

@@ -46,7 +46,7 @@ export function formatQueue(queue: FormattedQueue, role?: Role | null) {
           email: queue.patient.user?.email ?? null,
           name: queue.patient.user?.name ?? null,
           phone: queue.patient.user?.phone ?? null,
-          userId: queue.patient.user?.id ?? null,
+          user_id: queue.patient.user?.id ?? null,
         }
       : null,
 
@@ -60,7 +60,7 @@ export function formatQueue(queue: FormattedQueue, role?: Role | null) {
             targetRole: queue.doctor.user?.role,
           }),
           name: queue.doctor.user?.name ?? null,
-          userId: queue.doctor.user?.id ?? null,
+          user_id: queue.doctor.user?.id ?? null,
         }
       : null,
 

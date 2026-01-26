@@ -7,7 +7,7 @@ import {
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
 import { UpdatePatientDto } from './dto/update-patient.dto';
-import { ILike, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { formatPatient } from './patients.helper';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { getTenantConnection } from 'src/common/db/tenant-connection';
@@ -59,7 +59,9 @@ export class PatientsService {
     return connection.getRepository(PatientTenantMembership);
   }
 
-  private async getClinicalRecordRepository(): Promise<Repository<ClinicalRecord>> {
+  private async getClinicalRecordRepository(): Promise<
+    Repository<ClinicalRecord>
+  > {
     const connection = await this.getConnection();
     return connection.getRepository(ClinicalRecord);
   }
@@ -72,7 +74,7 @@ export class PatientsService {
   }
 
   private getActor() {
-    const actor = (this.request as any)?.user;
+    const actor = this.request?.user;
     return {
       actorUserId: actor?.userId ?? null,
       actorRole: actor?.role ?? null,
@@ -97,7 +99,7 @@ export class PatientsService {
         actorRole,
         before: args.before ?? {},
         after: args.after ?? {},
-      } as any),
+      }),
     );
   }
 
@@ -164,7 +166,10 @@ export class PatientsService {
     }));
   }
 
-  async updateMySharingPreference(userId: string, shareMedicalHistory: boolean) {
+  async updateMySharingPreference(
+    userId: string,
+    shareMedicalHistory: boolean,
+  ) {
     const tenantSlug = this.getTenantSlug().trim().toLowerCase();
     const patient = await this.findPatientEntityByUserId(userId);
     if (!patient) {
@@ -233,7 +238,7 @@ export class PatientsService {
           : createPatientDto.dob
             ? new Date(createPatientDto.dob)
             : null,
-      } as any);
+      });
     }
 
     const existingMembership = await membershipRepository.findOne({
@@ -251,9 +256,14 @@ export class PatientsService {
         patientId: patient.id,
         tenantSlug,
         action: PatientMembershipAuditAction.MEMBERSHIP_CREATED,
-        after: { status: PatientTenantMembershipStatus.ACTIVE, shareMedicalHistory: true },
+        after: {
+          status: PatientTenantMembershipStatus.ACTIVE,
+          shareMedicalHistory: true,
+        },
       });
-    } else if (existingMembership.status !== PatientTenantMembershipStatus.ACTIVE) {
+    } else if (
+      existingMembership.status !== PatientTenantMembershipStatus.ACTIVE
+    ) {
       const before = {
         status: existingMembership.status,
         shareMedicalHistory: existingMembership.shareMedicalHistory,
@@ -353,20 +363,27 @@ export class PatientsService {
     await this.assertActiveMembership(patient.id);
 
     // Update global patient profile fields
-    if (updatePatientDto.gender !== undefined) patient.gender = updatePatientDto.gender;
+    if (updatePatientDto.gender !== undefined)
+      patient.gender = updatePatientDto.gender;
     if (updatePatientDto.address !== undefined)
       patient.address = updatePatientDto.address;
     if (updatePatientDto.age !== undefined)
       patient.dob = this.calculateDob(updatePatientDto.age);
     if (updatePatientDto.dob !== undefined)
-      patient.dob = updatePatientDto.dob ? new Date(updatePatientDto.dob) : null;
+      patient.dob = updatePatientDto.dob
+        ? new Date(updatePatientDto.dob)
+        : null;
 
-    // Update global user identity fields (email/name/phone/password)
+    // TODO: Remove this once we have a global user service
     const userUpdate: any = {};
-    if (updatePatientDto.email !== undefined) userUpdate.email = updatePatientDto.email;
-    if (updatePatientDto.name !== undefined) userUpdate.name = updatePatientDto.name;
-    if (updatePatientDto.phone !== undefined) userUpdate.phone = updatePatientDto.phone;
-    if (updatePatientDto.password !== undefined) userUpdate.password = updatePatientDto.password;
+    if (updatePatientDto.email !== undefined)
+      userUpdate.email = updatePatientDto.email;
+    if (updatePatientDto.name !== undefined)
+      userUpdate.name = updatePatientDto.name;
+    if (updatePatientDto.phone !== undefined)
+      userUpdate.phone = updatePatientDto.phone;
+    if (updatePatientDto.password !== undefined)
+      userUpdate.password = updatePatientDto.password;
     if (Object.keys(userUpdate).length > 0) {
       await this.usersService.update(patient.user_id, userUpdate);
     }
@@ -395,7 +412,10 @@ export class PatientsService {
     const membership = await membershipRepository.findOne({
       where: { patientId: patient.id, tenantSlug },
     });
-    if (!membership || membership.status !== PatientTenantMembershipStatus.ACTIVE) {
+    if (
+      !membership ||
+      membership.status !== PatientTenantMembershipStatus.ACTIVE
+    ) {
       throw new NotFoundException('Patient not found');
     }
 
@@ -420,8 +440,13 @@ export class PatientsService {
     const nextCompanies = (patient.user?.companies ?? []).filter(
       (c) => String(c).trim().toLowerCase() !== tenantSlug,
     );
-    if (patient.user && nextCompanies.length !== (patient.user.companies ?? []).length) {
-      await this.usersService.update(patient.user_id, { companies: nextCompanies });
+    if (
+      patient.user &&
+      nextCompanies.length !== (patient.user.companies ?? []).length
+    ) {
+      await this.usersService.update(patient.user_id, {
+        companies: nextCompanies,
+      });
     }
 
     return { message: 'Patient removed from organization' };

@@ -4,7 +4,10 @@ import { INestApplicationContext } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Company } from '@/auth/entities/company.entity';
 import { getTenantConnection } from 'src/common/db/tenant-connection';
-import { Patient as PublicPatient } from '@/public/patients/entities/patient.entity';
+import {
+  Gender,
+  Patient as PublicPatient,
+} from '@/public/patients/entities/patient.entity';
 import {
   PatientTenantMembership,
   PatientTenantMembershipStatus,
@@ -13,7 +16,10 @@ import {
   ClinicalRecord,
   ClinicalRecordType,
 } from '@/public/clinical/entities/clinical-record.entity';
-import { Queue, QueueStatus } from '@/client/appointments/queue/entities/queue.entity';
+import {
+  Queue,
+  QueueStatus,
+} from '@/client/appointments/queue/entities/queue.entity';
 
 const CHUNK_SIZE = 500;
 
@@ -27,11 +33,13 @@ async function run(app: INestApplicationContext) {
   const publicDataSource = app.get(DataSource);
   const companyRepo = publicDataSource.getRepository(Company);
   const publicPatientRepo = publicDataSource.getRepository(PublicPatient);
-  const membershipRepo = publicDataSource.getRepository(PatientTenantMembership);
+  const membershipRepo = publicDataSource.getRepository(
+    PatientTenantMembership,
+  );
   const clinicalRepo = publicDataSource.getRepository(ClinicalRecord);
 
   const companies = await companyRepo.find({
-    where: { deleted: false } as any,
+    where: { deleted: false },
   });
 
   const tenantSlugs = companies
@@ -49,16 +57,16 @@ async function run(app: INestApplicationContext) {
     let tenantPatients: Array<{
       id: string;
       user_id: string;
-      gender: any;
-      dob: any;
-      address: any;
-      deletedAt: any;
+      gender: Gender;
+      dob: Date | null;
+      address: string | null;
+      deletedAt: Date | null;
     }> = [];
     try {
       tenantPatients = await tenantDs.query(
         `SELECT id, user_id, gender, dob, address, "deletedAt" as "deletedAt" FROM "${tenantSlug}"."patients"`,
       );
-    } catch (e) {
+    } catch {
       console.log(
         `Skipping tenant ${tenantSlug}: patients table not found or not accessible`,
       );
@@ -87,15 +95,15 @@ async function run(app: INestApplicationContext) {
         // Merge: only fill missing fields
         let changed = false;
         if (!pp.gender && tp.gender) {
-          pp.gender = tp.gender as any;
+          pp.gender = tp.gender;
           changed = true;
         }
         if (!pp.dob && tp.dob) {
-          pp.dob = tp.dob as any;
+          pp.dob = tp.dob;
           changed = true;
         }
         if (!pp.address && tp.address) {
-          pp.address = tp.address as any;
+          pp.address = tp.address;
           changed = true;
         }
         if (changed) {
@@ -121,7 +129,7 @@ async function run(app: INestApplicationContext) {
             tenantSlug,
             status: desiredStatus,
             shareMedicalHistory: true,
-          } as any),
+          }),
         );
       } else if (existingMembership.status !== desiredStatus) {
         existingMembership.status = desiredStatus;
@@ -134,12 +142,14 @@ async function run(app: INestApplicationContext) {
       oldId,
       newId,
     }));
-    console.log(`Remapping appointment_queue.patientId for ${pairs.length} patients...`);
+    console.log(
+      `Remapping appointment_queue.patientId for ${pairs.length} patients...`,
+    );
 
     for (const batch of chunk(pairs, CHUNK_SIZE)) {
       // Build VALUES list: (oldId, newId)
       const valuesSql: string[] = [];
-      const params: any[] = [];
+      const params: unknown[] = [];
       let p = 1;
       for (const row of batch) {
         valuesSql.push(`($${p++}, $${p++})`);
@@ -157,7 +167,7 @@ async function run(app: INestApplicationContext) {
 
     // 4) Backfill public clinical records from completed queues
     const completedQueues = await tenantQueueRepo.find({
-      where: { status: QueueStatus.COMPLETED } as any,
+      where: { status: QueueStatus.COMPLETED },
       withDeleted: true,
     });
     console.log(`Completed queues: ${completedQueues.length}`);
@@ -166,10 +176,7 @@ async function run(app: INestApplicationContext) {
     for (const q of completedQueues) {
       const publicPatientId = idMap.get(q.patientId) ?? q.patientId;
       const occurredAt =
-        (q.completedAt as any) ??
-        (q.updatedAt as any) ??
-        (q.createdAt as any) ??
-        new Date();
+        q.completedAt ?? q.updatedAt ?? q.createdAt ?? new Date();
 
       if (q.title || q.notes) {
         const exists = await clinicalRepo.findOne({
@@ -177,7 +184,7 @@ async function run(app: INestApplicationContext) {
             patientId: publicPatientId,
             encounterRef: q.id,
             recordType: ClinicalRecordType.APPOINTMENT_NOTE,
-          } as any,
+          },
           select: ['id'],
         });
         if (!exists) {
@@ -196,7 +203,7 @@ async function run(app: INestApplicationContext) {
                 queueId: q.id,
                 appointmentDate: q.appointmentDate,
               },
-            } as any),
+            }),
           );
           inserted++;
         }
@@ -208,7 +215,7 @@ async function run(app: INestApplicationContext) {
             patientId: publicPatientId,
             encounterRef: q.id,
             recordType: ClinicalRecordType.PRESCRIPTION,
-          } as any,
+          },
           select: ['id'],
         });
         if (!exists) {
@@ -227,7 +234,7 @@ async function run(app: INestApplicationContext) {
                 queueId: q.id,
                 appointmentDate: q.appointmentDate,
               },
-            } as any),
+            }),
           );
           inserted++;
         }
@@ -241,4 +248,3 @@ async function run(app: INestApplicationContext) {
 }
 
 executeScript(run);
-

@@ -34,10 +34,10 @@ export class LoggingInterceptor implements NestInterceptor {
     response.setHeader('x-request-id', requestId);
 
     // Extract tenant slug if available
-    const tenantSlug = (request as any).tenantSlug;
+    const tenantSlug = request?.tenantSlug;
 
     // Extract user ID if available (from JWT or session)
-    const userId = (request as any).user?.id || (request as any).user?.userId;
+    const userId = request?.user?.userId;
 
     // Sanitize headers (remove sensitive information)
     const sanitizedHeaders = this.sanitizeHeaders(headers);

@@ -79,7 +79,7 @@ export class QueueService {
   ) {}
 
   private getTenantSlug(): string {
-    const tenantSlug = (this.request as any)?.tenantSlug;
+    const tenantSlug = this.request?.tenantSlug;
     if (!tenantSlug) {
       throw new UnauthorizedException('Tenant schema is required');
     }
@@ -105,7 +105,7 @@ export class QueueService {
         patientId,
         tenantSlug,
         status: PatientTenantMembershipStatus.ACTIVE,
-      } as any,
+      },
     });
     if (!membership) {
       throw new NotFoundException('Patient not found');
@@ -123,7 +123,7 @@ export class QueueService {
         doctorId,
         tenantSlug,
         status: DoctorTenantMembershipStatus.ACTIVE,
-      } as any,
+      },
     });
     if (!membership) {
       throw new NotFoundException('Doctor not found');
@@ -133,7 +133,7 @@ export class QueueService {
 
   private async resolvePatientId(): Promise<string | undefined> {
     if (this.resolvedPatientId !== undefined) return this.resolvedPatientId;
-    const user = (this.request as any).user;
+    const user = this.request.user;
     if (!user) throw new UnauthorizedException('Unauthorized');
     if (user.role !== Role.PATIENT) {
       this.resolvedPatientId = undefined;
@@ -142,7 +142,7 @@ export class QueueService {
 
     const repo = await this.getRepository<Patient>(Patient);
     const patient = await repo.findOne({
-      where: { user_id: user.userId } as any,
+      where: { user_id: user.userId },
       select: ['id'],
     });
     if (!patient) {
@@ -155,7 +155,7 @@ export class QueueService {
 
   private async resolveDoctorId(): Promise<string | undefined> {
     if (this.resolvedDoctorId !== undefined) return this.resolvedDoctorId;
-    const user = (this.request as any).user;
+    const user = this.request.user;
     if (!user) throw new UnauthorizedException('Unauthorized');
     if (user.role !== Role.DOCTOR) {
       this.resolvedDoctorId = undefined;
@@ -164,7 +164,7 @@ export class QueueService {
 
     const repo = await this.getRepository<Doctor>(Doctor);
     const doctor = await repo.findOne({
-      where: { user_id: user.userId } as any,
+      where: { user_id: user.userId },
       select: ['id'],
     });
     if (!doctor) {
@@ -239,7 +239,7 @@ export class QueueService {
     }
 
     const doctor = await this.doctorsService.findOne(createQueueDto.doctorId);
-    const doctorCode = (doctor as any)?.code ?? doctorMembership.code;
+    const doctorCode = doctor?.code ?? doctorMembership.code;
     if (!doctorCode) {
       throw new BadRequestException(
         'Doctor code is required for appointment booking',
@@ -372,7 +372,7 @@ export class QueueService {
     const previousStatus = queue.status;
     queue.status = QueueStatus.CANCELLED;
     queue.cancellationDetails = {
-      by: (this.request as any).user.userId,
+      by: this.request.user.userId,
       remark,
     };
     const queueRepository = await this.getQueueRepository();
@@ -391,7 +391,7 @@ export class QueueService {
   }
 
   async findAll(date?: string) {
-    const user = (this.request as any).user;
+    const user = this.request.user;
     if (!user) throw new UnauthorizedException('Unauthorized');
     const patientId = await this.resolvePatientId();
     const doctorId = await this.resolveDoctorId();
@@ -414,7 +414,7 @@ export class QueueService {
   }
 
   async findOne(id: string) {
-    const user = (this.request as any).user;
+    const user = this.request.user;
     if (!user) throw new UnauthorizedException('Unauthorized');
     const patientId = await this.resolvePatientId();
     const doctorId = await this.resolveDoctorId();
@@ -438,7 +438,7 @@ export class QueueService {
   }
 
   async findByAid(aid: string) {
-    const user = (this.request as any).user;
+    const user = this.request.user;
     if (!user) throw new UnauthorizedException('Unauthorized');
     const patientId = await this.resolvePatientId();
     const doctorId = await this.resolveDoctorId();
@@ -459,7 +459,7 @@ export class QueueService {
   }
 
   async update(id: string, updateQueueDto: UpdateQueueDto) {
-    const user = (this.request as any).user;
+    const user = this.request.user;
     if (!user) throw new UnauthorizedException('Unauthorized');
 
     const queueRepository = await this.getQueueRepository();
@@ -490,7 +490,7 @@ export class QueueService {
   }
 
   async remove(id: string) {
-    const user = (this.request as any).user;
+    const user = this.request.user;
     if (!user) throw new UnauthorizedException('Unauthorized');
 
     const queueRepository = await this.getRepository<Queue>(Queue);
@@ -592,15 +592,11 @@ export class QueueService {
 
     return {
       previous: previousQueues.map((queue) =>
-        formatQueue(queue, (this.request as any).user.role),
+        formatQueue(queue, this.request.user.role),
       ),
-      current: current
-        ? formatQueue(current, (this.request as any).user.role)
-        : null,
+      current: current ? formatQueue(current, this.request.user.role) : null,
       next: next
-        ? next.map((queue) =>
-            formatQueue(queue, (this.request as any).user.role),
-          )
+        ? next.map((queue) => formatQueue(queue, this.request.user.role))
         : null,
 
       metaData: {
@@ -645,7 +641,7 @@ export class QueueService {
       stakeholders: [queue.patient.user.id, queue.doctor.user.id],
     });
 
-    return formatQueue(queue, (this.request as any).user.role);
+    return formatQueue(queue, this.request.user.role);
   }
 
   // skip queue by id
@@ -687,7 +683,7 @@ export class QueueService {
       stakeholders: [queue.patient.user.id, queue.doctor.user.id],
     });
 
-    return formatQueue(queue, (this.request as any).user.role);
+    return formatQueue(queue, this.request.user.role);
   }
 
   // clock in
@@ -721,7 +717,7 @@ export class QueueService {
       description: `Appointment clocked in by ${this.request.user?.name || 'user'}.`,
       stakeholders: [queue.patient.user.id, queue.doctor.user.id],
     });
-    return formatQueue(queue, (this.request as any).user.role);
+    return formatQueue(queue, this.request.user.role);
   }
 
   // complete appointment queue
@@ -798,7 +794,7 @@ export class QueueService {
             patientId: queue.patientId,
             encounterRef: queue.id,
             recordType: ClinicalRecordType.APPOINTMENT_NOTE,
-          } as any,
+          },
           select: ['id'],
         });
         if (!exists) {
@@ -819,7 +815,7 @@ export class QueueService {
             patientId: queue.patientId,
             encounterRef: queue.id,
             recordType: ClinicalRecordType.PRESCRIPTION,
-          } as any,
+          },
           select: ['id'],
         });
         if (!exists) {
@@ -835,14 +831,14 @@ export class QueueService {
       }
 
       if (toInsert.length > 0) {
-        await clinicalRepo.save(toInsert as any);
+        await clinicalRepo.save(toInsert);
       }
     } catch (e) {
       // Non-fatal: appointment completion should succeed even if history write fails.
       this.logger.error(e);
     }
 
-    return formatQueue(queue, (this.request as any).user.role);
+    return formatQueue(queue, this.request.user.role);
   }
 
   async appointmentReceiptPdf(id: string) {

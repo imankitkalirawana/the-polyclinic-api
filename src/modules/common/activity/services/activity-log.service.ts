@@ -16,7 +16,7 @@ export class ActivityLogService {
   private readonly request: Request;
 
   private getTenantSlug(): string {
-    const tenantSlug = (this.request as any)?.tenantSlug;
+    const tenantSlug = this.request?.tenantSlug;
     if (!tenantSlug) {
       throw new UnauthorizedException('Tenant schema is required');
     }
@@ -104,7 +104,7 @@ export class ActivityLogService {
   }
 
   async getActivityLogsByStakeholder(userId?: string) {
-    const currentUserId = userId || (this.request as any)?.user?.userId;
+    const currentUserId = userId || this.request?.user?.userId;
 
     if (!currentUserId) {
       return [];

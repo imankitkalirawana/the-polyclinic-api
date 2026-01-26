@@ -39,8 +39,8 @@ export class LoggingExceptionFilter implements ExceptionFilter {
       request.headers['x-correlation-id'] ||
       'unknown';
 
-    const tenantSlug = (request as any).tenantSlug;
-    const userId = (request as any).user?.id || (request as any).user?.userId;
+    const tenantSlug = request?.tenantSlug;
+    const userId = request?.user?.userId;
 
     const errorMetadata: LogMetadata = {
       requestId: String(requestId),

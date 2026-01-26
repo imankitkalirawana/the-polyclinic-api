@@ -26,7 +26,7 @@ async function run(app: INestApplicationContext) {
   const membershipRepo = publicDataSource.getRepository(DoctorTenantMembership);
 
   const companies = await companyRepo.find({
-    where: { deleted: false } as any,
+    where: { deleted: false },
   });
 
   const tenantSlugs = companies
@@ -51,7 +51,7 @@ async function run(app: INestApplicationContext) {
       education: string | null;
       biography: string | null;
       seating: string | null;
-      deletedAt: any;
+      deletedAt: Date | null;
     }> = [];
 
     try {
@@ -87,19 +87,22 @@ async function run(app: INestApplicationContext) {
       } else {
         let changed = false;
         if (!pd.specialization && td.specialization) {
-          pd.specialization = td.specialization as any;
+          pd.specialization = td.specialization;
           changed = true;
         }
-        if ((pd.experience === null || pd.experience === undefined) && td.experience) {
-          pd.experience = td.experience as any;
+        if (
+          (pd.experience === null || pd.experience === undefined) &&
+          td.experience
+        ) {
+          pd.experience = td.experience;
           changed = true;
         }
         if (!pd.education && td.education) {
-          pd.education = td.education as any;
+          pd.education = td.education;
           changed = true;
         }
         if (!pd.biography && td.biography) {
-          pd.biography = td.biography as any;
+          pd.biography = td.biography;
           changed = true;
         }
         if (changed) pd = await publicDoctorRepo.save(pd);
@@ -125,7 +128,7 @@ async function run(app: INestApplicationContext) {
             designation: td.designation ?? null,
             seating: td.seating ?? null,
             departments: td.departments ?? null,
-          } as any),
+          }),
         );
       } else {
         let changed = false;
@@ -147,7 +150,8 @@ async function run(app: INestApplicationContext) {
           changed = true;
         }
         if (
-          (!existingMembership.departments || existingMembership.departments.length === 0) &&
+          (!existingMembership.departments ||
+            existingMembership.departments.length === 0) &&
           td.departments &&
           td.departments.length > 0
         ) {
@@ -163,11 +167,13 @@ async function run(app: INestApplicationContext) {
       oldId,
       newId,
     }));
-    console.log(`Remapping appointment_queue.doctorId for ${pairs.length} doctors...`);
+    console.log(
+      `Remapping appointment_queue.doctorId for ${pairs.length} doctors...`,
+    );
 
     for (const batch of chunk(pairs, CHUNK_SIZE)) {
       const valuesSql: string[] = [];
-      const params: any[] = [];
+      const params: unknown[] = [];
       let p = 1;
       for (const row of batch) {
         valuesSql.push(`($${p++}, $${p++})`);
@@ -191,4 +197,3 @@ async function run(app: INestApplicationContext) {
 }
 
 executeScript(run);
-

@@ -34,7 +34,7 @@ export class PaymentsService {
   ) {}
 
   private getTenantSlug(): string {
-    const tenantSlug = (this.request as any)?.tenantSlug;
+    const tenantSlug = this.request?.tenantSlug;
     if (!tenantSlug) {
       throw new UnauthorizedException('Tenant schema is required');
     }
@@ -153,9 +153,12 @@ export class PaymentsService {
 
     await paymentRepo.save(payment);
 
-    await queueRepo.update({ id: payment.referenceId }, {
-      status: QueueStatus.BOOKED,
-    } as any);
+    await queueRepo.update(
+      { id: payment.referenceId },
+      {
+        status: QueueStatus.BOOKED,
+      },
+    );
 
     this.logger.log(
       `Payment captured and appointment confirmed for orderId: ${orderId}`,

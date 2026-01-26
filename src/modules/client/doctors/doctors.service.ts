@@ -88,7 +88,7 @@ export class DoctorsService {
         actorRole,
         before: args.before ?? {},
         after: args.after ?? {},
-      } as any),
+      }),
     );
   }
 
@@ -100,7 +100,7 @@ export class DoctorsService {
         doctorId,
         tenantSlug,
         status: DoctorTenantMembershipStatus.ACTIVE,
-      } as any,
+      },
       relations: ['doctor', 'doctor.user'],
     });
     if (!membership) {
@@ -152,7 +152,7 @@ export class DoctorsService {
         experience: createDoctorDto.experience,
         education: createDoctorDto.education,
         biography: createDoctorDto.biography,
-      } as any);
+      });
     }
 
     const existingMembership = await membershipRepo.findOne({
@@ -160,7 +160,7 @@ export class DoctorsService {
     });
 
     if (!existingMembership) {
-      const before: any = {};
+      const before = {};
       await membershipRepo.save({
         doctorId: doctor.id,
         tenantSlug,
@@ -169,7 +169,7 @@ export class DoctorsService {
         designation: createDoctorDto.designation ?? null,
         seating: createDoctorDto.seating ?? null,
         departments: createDoctorDto.departments ?? null,
-      } as any);
+      });
       await this.auditMembershipChange({
         doctorId: doctor.id,
         tenantSlug,
@@ -291,7 +291,7 @@ export class DoctorsService {
       where: {
         doctorId: doctor.id,
         tenantSlug,
-      } as any,
+      },
     });
     if (!membership) throw new NotFoundException('Doctor not found');
 

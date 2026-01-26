@@ -47,7 +47,7 @@ export class ActivityService {
     }
 
     try {
-      const tenantSlug = (this.request as any)?.tenantSlug;
+      const tenantSlug = this.request?.tenantSlug;
       const eventPayload = {
         ...payload,
         tenantSlug,
@@ -228,10 +228,10 @@ export class ActivityService {
   }
 
   private getActorId(): string | null {
-    return (this.request as any)?.user?.userId || null;
+    return this.request?.user?.userId || null;
   }
 
   private getActorRole(): string | null {
-    return (this.request as any)?.user?.role || null;
+    return this.request?.user?.role || null;
   }
 }
