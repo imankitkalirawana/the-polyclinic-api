@@ -8,7 +8,7 @@ import {
   IsEmail,
   IsNotEmpty,
 } from 'class-validator';
-import { Gender } from '../entities/patient.entity';
+import { Gender } from '@/public/patients/entities/patient.entity';
 import { Transform } from 'class-transformer';
 
 export class CreatePatientDto {

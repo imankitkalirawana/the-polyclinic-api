@@ -9,8 +9,8 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Patient } from '@/client/patients/entities/patient.entity';
-import { Doctor } from '@/client/doctors/entities/doctor.entity';
+import { Patient } from '@/public/patients/entities/patient.entity';
+import { Doctor } from '@/public/doctors/entities/doctor.entity';
 import { User } from '@/auth/entities/user.entity';
 import { PaymentMode } from '../enums/queue.enum';
 
@@ -53,6 +53,7 @@ export class Queue {
 
   @ManyToOne(() => Patient, (patient) => patient.id, {
     onDelete: 'CASCADE',
+    createForeignKeyConstraints: false,
   })
   @JoinColumn({ name: 'patientId' })
   patient: Patient;
@@ -69,6 +70,7 @@ export class Queue {
 
   @ManyToOne(() => Doctor, (doctor) => doctor.id, {
     onDelete: 'CASCADE',
+    createForeignKeyConstraints: false,
   })
   @JoinColumn({ name: 'doctorId' })
   doctor: Doctor;

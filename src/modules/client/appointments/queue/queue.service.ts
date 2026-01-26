@@ -13,8 +13,8 @@ import { CreateQueueDto } from './dto/create-queue.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
 import { CurrentUserPayload } from '@/auth/decorators/current-user.decorator';
 import { Queue, QueueStatus } from './entities/queue.entity';
-import { Doctor } from '@/client/doctors/entities/doctor.entity';
-import { Patient } from '@/client/patients/entities/patient.entity';
+import { Doctor } from '@/public/doctors/entities/doctor.entity';
+import { Patient } from '@/public/patients/entities/patient.entity';
 import {
   formatQueue,
   generateAppointmentId,
@@ -37,6 +37,18 @@ import { ActivityService } from '@/common/activity/services/activity.service';
 import { ActivityLogService } from '@/common/activity/services/activity-log.service';
 import { EntityType } from '@/common/activity/enums/entity-type.enum';
 import { getTenantConnection } from 'src/common/db/tenant-connection';
+import {
+  PatientTenantMembership,
+  PatientTenantMembershipStatus,
+} from '@/public/patients/entities/patient-tenant-membership.entity';
+import {
+  ClinicalRecord,
+  ClinicalRecordType,
+} from '@/public/clinical/entities/clinical-record.entity';
+import {
+  DoctorTenantMembership,
+  DoctorTenantMembershipStatus,
+} from '@/public/doctors/entities/doctor-tenant-membership.entity';
 
 const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
 const todayEnd = new Date(new Date().setHours(23, 59, 59, 999));
@@ -83,6 +95,42 @@ export class QueueService {
     return connection.getRepository<T>(entity);
   }
 
+  private async assertActivePatientMembership(patientId: string) {
+    const tenantSlug = this.getTenantSlug().trim().toLowerCase();
+    const repo = await this.getRepository<PatientTenantMembership>(
+      PatientTenantMembership,
+    );
+    const membership = await repo.findOne({
+      where: {
+        patientId,
+        tenantSlug,
+        status: PatientTenantMembershipStatus.ACTIVE,
+      } as any,
+    });
+    if (!membership) {
+      throw new NotFoundException('Patient not found');
+    }
+    return membership;
+  }
+
+  private async assertActiveDoctorMembership(doctorId: string) {
+    const tenantSlug = this.getTenantSlug().trim().toLowerCase();
+    const repo = await this.getRepository<DoctorTenantMembership>(
+      DoctorTenantMembership,
+    );
+    const membership = await repo.findOne({
+      where: {
+        doctorId,
+        tenantSlug,
+        status: DoctorTenantMembershipStatus.ACTIVE,
+      } as any,
+    });
+    if (!membership) {
+      throw new NotFoundException('Doctor not found');
+    }
+    return membership;
+  }
+
   private async resolvePatientId(): Promise<string | undefined> {
     if (this.resolvedPatientId !== undefined) return this.resolvedPatientId;
     const user = (this.request as any).user;
@@ -100,6 +148,7 @@ export class QueueService {
     if (!patient) {
       throw new UnauthorizedException('Patient profile not found for user');
     }
+    await this.assertActivePatientMembership(patient.id);
     this.resolvedPatientId = patient.id;
     return patient.id;
   }
@@ -121,6 +170,7 @@ export class QueueService {
     if (!doctor) {
       throw new UnauthorizedException('Doctor profile not found for user');
     }
+    await this.assertActiveDoctorMembership(doctor.id);
     this.resolvedDoctorId = doctor.id;
     return doctor.id;
   }
@@ -170,6 +220,13 @@ export class QueueService {
   }
 
   async create(createQueueDto: CreateQueueDto) {
+    // Prevent cross-tenant patient references
+    await this.assertActivePatientMembership(createQueueDto.patientId);
+    // Prevent cross-tenant doctor references
+    const doctorMembership = await this.assertActiveDoctorMembership(
+      createQueueDto.doctorId,
+    );
+
     const existingQueue = await this.checkIfQueueIsBooked(
       createQueueDto.doctorId,
       createQueueDto.patientId,
@@ -182,8 +239,8 @@ export class QueueService {
     }
 
     const doctor = await this.doctorsService.findOne(createQueueDto.doctorId);
-
-    if (!doctor.code) {
+    const doctorCode = (doctor as any)?.code ?? doctorMembership.code;
+    if (!doctorCode) {
       throw new BadRequestException(
         'Doctor code is required for appointment booking',
       );
@@ -232,7 +289,7 @@ export class QueueService {
       // Generate appointment ID (aid)
       const aid = generateAppointmentId(
         createQueueDto.appointmentDate,
-        doctor.code,
+        doctorCode,
         sequenceNumber,
       );
 
@@ -410,16 +467,7 @@ export class QueueService {
     const queue = await this.findOne(id);
 
     if (updateQueueDto.doctorId) {
-      const doctorRepository = await this.getRepository<Doctor>(Doctor);
-      const doctor = await doctorRepository.findOne({
-        where: { id: updateQueueDto.doctorId },
-      });
-
-      if (!doctor) {
-        throw new NotFoundException(
-          `Doctor with ID ${updateQueueDto.doctorId} not found`,
-        );
-      }
+      await this.assertActiveDoctorMembership(updateQueueDto.doctorId);
     }
 
     const previousData = { ...queue };
@@ -477,6 +525,9 @@ export class QueueService {
     queueId?: string;
     appointmentDate?: Date;
   }) {
+    // Prevent cross-tenant doctor access
+    await this.assertActiveDoctorMembership(doctorId);
+
     let requestedQueue: Queue | null = null;
 
     if (queueId) {
@@ -698,7 +749,7 @@ export class QueueService {
     Object.assign(queue, {
       ...completeQueueDto,
       status: QueueStatus.COMPLETED,
-      completedBy: user.userId,
+      completedBy: user.user_id,
       completedAt: new Date(),
     });
 
@@ -713,6 +764,84 @@ export class QueueService {
     });
 
     await queueRepository.save(queue);
+
+    // Write shared clinical records (public schema), idempotent by encounterRef+type
+    try {
+      const tenantSlug = this.getTenantSlug().trim().toLowerCase();
+      const clinicalRepo =
+        await this.getRepository<ClinicalRecord>(ClinicalRecord);
+      const occurredAt = queue.completedAt ?? new Date();
+
+      const notesPayload = {
+        title: queue.title ?? null,
+        notes: queue.notes ?? null,
+        doctorId: queue.doctorId,
+        aid: queue.aid,
+        queueId: queue.id,
+        appointmentDate: queue.appointmentDate,
+      };
+
+      const prescriptionPayload = {
+        prescription: queue.prescription ?? null,
+        title: queue.title ?? null,
+        doctorId: queue.doctorId,
+        aid: queue.aid,
+        queueId: queue.id,
+        appointmentDate: queue.appointmentDate,
+      };
+
+      const toInsert: Array<Partial<ClinicalRecord>> = [];
+
+      if (queue.title || queue.notes) {
+        const exists = await clinicalRepo.findOne({
+          where: {
+            patientId: queue.patientId,
+            encounterRef: queue.id,
+            recordType: ClinicalRecordType.APPOINTMENT_NOTE,
+          } as any,
+          select: ['id'],
+        });
+        if (!exists) {
+          toInsert.push({
+            patientId: queue.patientId,
+            sourceTenantSlug: tenantSlug,
+            encounterRef: queue.id,
+            occurredAt,
+            recordType: ClinicalRecordType.APPOINTMENT_NOTE,
+            payload: notesPayload,
+          });
+        }
+      }
+
+      if (queue.prescription) {
+        const exists = await clinicalRepo.findOne({
+          where: {
+            patientId: queue.patientId,
+            encounterRef: queue.id,
+            recordType: ClinicalRecordType.PRESCRIPTION,
+          } as any,
+          select: ['id'],
+        });
+        if (!exists) {
+          toInsert.push({
+            patientId: queue.patientId,
+            sourceTenantSlug: tenantSlug,
+            encounterRef: queue.id,
+            occurredAt,
+            recordType: ClinicalRecordType.PRESCRIPTION,
+            payload: prescriptionPayload,
+          });
+        }
+      }
+
+      if (toInsert.length > 0) {
+        await clinicalRepo.save(toInsert as any);
+      }
+    } catch (e) {
+      // Non-fatal: appointment completion should succeed even if history write fails.
+      this.logger.error(e);
+    }
+
     return formatQueue(queue, (this.request as any).user.role);
   }
 

@@ -46,14 +46,14 @@ export class AuthController {
   @Get('session')
   @UseGuards(BearerAuthGuard)
   async session(@CurrentUser() user: CurrentUserPayload) {
-    return await this.authService.getSession(user.userId);
+    return await this.authService.getSession(user.user_id);
   }
 
   @Delete('logout')
   @UseGuards(BearerAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(@CurrentUser() user: CurrentUserPayload) {
-    await this.authService.logout(user.sessionId, user.userId);
+    await this.authService.logout(user.session_id, user.user_id);
     return null;
   }
 }

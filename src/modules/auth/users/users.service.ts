@@ -130,26 +130,33 @@ export class UsersService {
     name = getNameFromEmail(email),
     phone,
     password = generatePassword(12),
+    role = Role.PATIENT,
   }: {
     email: string;
     name?: string;
     phone?: string;
     password?: string;
+    role?: Role;
   }): Promise<User> {
     const tenantSlug = this.request.tenantSlug?.toLowerCase();
     if (!tenantSlug) {
       throw new NotFoundException('Tenant schema not available');
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
     const existing = await this.userRepository.findOne({
-      where: { email, deleted: false, companies: ArrayContains([tenantSlug]) },
+      where: {
+        email: normalizedEmail,
+        deleted: false,
+        companies: ArrayContains([tenantSlug]),
+      },
     });
 
     if (!existing) {
       return await this.create({
-        email,
+        email: normalizedEmail,
         password,
-        role: Role.PATIENT,
+        role,
         name,
         phone,
         companies: [tenantSlug],

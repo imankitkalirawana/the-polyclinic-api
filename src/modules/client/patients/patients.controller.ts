@@ -21,6 +21,7 @@ import {
 } from '@/auth/decorators/current-user.decorator';
 import { StandardParam, StandardParams } from 'nest-standard-response';
 import { CreatePatientDto } from './dto/create-patient.dto';
+import { UpdateSharingDto } from './dto/update-sharing.dto';
 
 @Controller('client/patients')
 @UseGuards(BearerAuthGuard, RolesGuard)
@@ -45,13 +46,38 @@ export class PatientsController {
 
   @Get('me')
   async getMe(@CurrentUser() user: CurrentUserPayload) {
-    return this.patientsService.findByUserId(user.userId);
+    return this.patientsService.findByUserId(user.user_id);
+  }
+
+  @Get('me/clinical-records')
+  @Roles(Role.PATIENT)
+  async getMyClinicalRecords(@CurrentUser() user: CurrentUserPayload) {
+    const patient = await this.patientsService.findByUserId(user.user_id);
+    return this.patientsService.getClinicalRecords(patient.id);
+  }
+
+  @Patch('me/sharing')
+  @Roles(Role.PATIENT)
+  async updateMySharing(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: UpdateSharingDto,
+  ) {
+    return this.patientsService.updateMySharingPreference(
+      user.user_id,
+      dto.shareMedicalHistory,
+    );
   }
 
   @Get(':id')
   @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
   async findOne(@Param('id') id: string) {
     return this.patientsService.findOne(id);
+  }
+
+  @Get(':id/clinical-records')
+  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
+  async getClinicalRecords(@Param('id') id: string) {
+    return this.patientsService.getClinicalRecords(id);
   }
 
   @Patch(':id')

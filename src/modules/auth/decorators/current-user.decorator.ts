@@ -2,12 +2,12 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Role } from 'src/common/enums/role.enum';
 
 export type CurrentUserPayload = {
-  userId: string;
+  user_id: string;
   email: string;
   name: string;
   phone: string | null;
   role: Role;
-  sessionId: string;
+  session_id: string;
 };
 
 export const CurrentUser = createParamDecorator(

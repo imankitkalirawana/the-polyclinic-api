@@ -1,12 +1,13 @@
 import {
   Column,
-  Entity,
-  PrimaryGeneratedColumn,
   CreateDateColumn,
-  UpdateDateColumn,
-  OneToOne,
-  JoinColumn,
   DeleteDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '@/auth/entities/user.entity';
 
@@ -16,20 +17,19 @@ export enum Gender {
   OTHER = 'OTHER',
 }
 
-@Entity('patients')
+@Entity('patient_patients', { schema: 'public' })
 export class Patient {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // 🔑 Foreign key column
   @Column({ type: 'uuid', unique: true })
+  @Index()
   user_id: string;
 
   @OneToOne(() => User, (user) => user.id, {
     onDelete: 'CASCADE',
-    createForeignKeyConstraints: false,
   })
-  @JoinColumn({ name: 'user_id' }) // cross-schema reference (public.login_users)
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   @Column({
@@ -45,12 +45,12 @@ export class Patient {
   @Column({ nullable: true })
   address: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt: Date;
 
-  @DeleteDateColumn()
+  @DeleteDateColumn({ type: 'timestamp with time zone' })
   deletedAt: Date | null;
 }

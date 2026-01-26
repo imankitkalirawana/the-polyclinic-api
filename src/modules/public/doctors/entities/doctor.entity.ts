@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -10,32 +11,23 @@ import {
 } from 'typeorm';
 import { User } from '@/auth/entities/user.entity';
 
-@Entity('doctors')
+@Entity('doctor_doctors', { schema: 'public' })
 export class Doctor {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', unique: true })
+  @Index()
   user_id: string;
-
-  @Column({ type: 'varchar', length: 3, unique: true, nullable: true })
-  code?: string;
 
   @OneToOne(() => User, (user) => user.id, {
     onDelete: 'CASCADE',
-    createForeignKeyConstraints: false,
   })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
   @Column({ nullable: true })
   specialization?: string;
-
-  @Column({ nullable: true })
-  designation?: string;
-
-  @Column('text', { array: true, nullable: true })
-  departments?: string[];
 
   @Column({ type: 'integer', nullable: true })
   experience?: number;
@@ -46,15 +38,12 @@ export class Doctor {
   @Column({ type: 'text', nullable: true })
   biography?: string;
 
-  @Column({ nullable: true })
-  seating?: string;
-
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt: Date;
 
-  @DeleteDateColumn()
+  @DeleteDateColumn({ type: 'timestamp with time zone' })
   deletedAt: Date | null;
 }

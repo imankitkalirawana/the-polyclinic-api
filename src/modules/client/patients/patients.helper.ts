@@ -1,4 +1,4 @@
-import { Patient } from './entities/patient.entity';
+import { Patient } from '@/public/patients/entities/patient.entity';
 import { IsNull } from 'typeorm';
 import { differenceInYears } from 'date-fns';
 
