@@ -72,7 +72,7 @@ export class SchemaValidatorService {
     return schema;
   }
 
-  private async schemaExists(schema: string): Promise<boolean> {
+  async schemaExists(schema: string): Promise<boolean> {
     const result = await this.dataSource.query(
       `
       SELECT EXISTS(

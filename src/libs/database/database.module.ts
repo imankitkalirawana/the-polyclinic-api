@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { SchemaModule } from 'src/libs/schema/schema.module';
@@ -6,6 +6,7 @@ import { DatabaseService } from './database.service';
 import { DataSourceConfig } from './datasource.config';
 import { TenantConnectionLifecycleService } from './tenant-connection-lifecycle.service';
 
+@Global()
 @Module({
   imports: [SchemaModule, ConfigModule.forFeature(DataSourceConfig)],
   providers: [DatabaseService, TenantConnectionLifecycleService],

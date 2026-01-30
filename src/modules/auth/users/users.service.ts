@@ -2,7 +2,6 @@ import {
   ConflictException,
   Inject,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,24 +11,28 @@ import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
-import { SchemaValidatorService } from '../schema/schema-validator.service';
+import { getTenantConnection } from 'src/common/db/tenant-connection';
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
-import { getTenantConnection } from 'src/common/db/tenant-connection';
 
 @Injectable()
 export class UsersService {
-  private readonly logger = new Logger(UsersService.name);
+  private readonly schema: string;
 
   constructor(
-    @Inject(REQUEST) private readonly request: Request,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly schemaValidator: SchemaValidatorService,
-  ) {}
+    @Inject(REQUEST) private request: Request,
+  ) {
+    this.schema = this.request.schema;
+  }
 
   private async getConnection() {
-    return await getTenantConnection(this.request.schema);
+    const schema = this.schema;
+    if (!schema) {
+      throw new NotFoundException('Schema not available');
+    }
+    return await getTenantConnection(schema);
   }
 
   private async getUserRepository() {
@@ -38,11 +41,12 @@ export class UsersService {
   }
 
   async checkUserExistsByEmailAndFail(email: string) {
+    const schema = this.request.schema;
     const userRepository = await this.getUserRepository();
     const user = await userRepository.findOne({
       where: {
         email,
-        companies: ArrayContains([this.request.schema]),
+        companies: ArrayContains([schema]),
       },
     });
     if (!user) {
@@ -55,7 +59,10 @@ export class UsersService {
   async checkEmailIsNotTaken(email: string) {
     const userRepository = await this.getUserRepository();
     const user = await userRepository.findOne({
-      where: { email, companies: ArrayContains([this.request.schema]) },
+      where: {
+        email,
+        companies: ArrayContains([this.schema]),
+      },
     });
     if (user) {
       throw new ConflictException('Email already taken');
@@ -75,14 +82,14 @@ export class UsersService {
   async findAll(): Promise<User[]> {
     return await this.userRepository.find({
       where: {
-        companies: ArrayContains([this.request.schema]),
+        companies: ArrayContains([this.schema]),
       },
     });
   }
 
   async findOne(id: string): Promise<User> {
     const user = await this.userRepository.findOne({
-      where: { id, companies: ArrayContains([this.request.schema]) },
+      where: { id, companies: ArrayContains([this.schema]) },
     });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -94,7 +101,7 @@ export class UsersService {
     const user = await this.userRepository.findOne({
       where: {
         email,
-        companies: ArrayContains([this.request.schema]),
+        companies: ArrayContains([this.schema]),
       },
     });
     if (!user) {

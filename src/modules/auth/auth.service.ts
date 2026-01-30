@@ -1,6 +1,7 @@
 import {
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -20,11 +21,14 @@ import {
   assertRoleAllowedForCompanyType,
   CLIENT_ROLES,
 } from './utils/company-role.util';
+import { REQUEST } from '@nestjs/core';
+import { Request } from 'express';
 
 type GlobalToken = { token: string; expiresIn: string };
 
 @Injectable()
 export class AuthService {
+  private readonly schema: string;
   constructor(
     private readonly jwtService: JwtService,
     private readonly schemaValidator: SchemaValidatorService,
@@ -32,12 +36,16 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Session)
     private readonly sessionRepository: Repository<Session>,
-  ) {}
+    @Inject(REQUEST) private request: Request,
+  ) {
+    this.schema = this.request.schema;
+  }
 
   async login(dto: LoginDto): Promise<GlobalToken> {
+    const schema = this.schema;
     const email = dto.email.trim().toLowerCase();
     const user = await this.userRepository.findOne({
-      where: { email, deleted: false },
+      where: { email },
     });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -48,7 +56,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const { token, expiresAt } = await this.createSessionAndToken({ user });
+    const { token, expiresAt } = await this.createSessionAndToken({
+      user,
+      schema,
+    });
 
     return { token, expiresIn: this.formatExpiresIn(expiresAt) };
   }
@@ -59,17 +70,15 @@ export class AuthService {
     { user: Pick<User, 'id' | 'email' | 'name' | 'role'> } & GlobalToken
   > {
     const email = dto.email.trim().toLowerCase();
-    const schema = await this.schemaValidator.assertSchemaExists(dto.schema);
+    const schema = this.schema;
 
     const existing = await this.userRepository.findOne({
       where: { email },
     });
     if (existing) {
-      if (existing.deleted) {
-        throw new ConflictException(
-          'User account is deleted, please contact support',
-        );
-      }
+      throw new ConflictException(
+        'User account is deleted, please contact support',
+      );
 
       if (existing.role !== Role.PATIENT) {
         throw new ForbiddenException('Only patients can register');
@@ -98,6 +107,7 @@ export class AuthService {
       const savedUser = await this.userRepository.save(existing);
       const { token, expiresAt } = await this.createSessionAndToken({
         user: savedUser,
+        schema,
       });
 
       return {
@@ -130,8 +140,6 @@ export class AuthService {
       role,
       company_type: companyType,
       email_verified: false,
-      deleted: false,
-      time_zone: 'UTC',
       permissions: {},
       companies: [schema],
     });
@@ -140,6 +148,7 @@ export class AuthService {
 
     const { token, expiresAt } = await this.createSessionAndToken({
       user: savedUser,
+      schema,
     });
 
     return {
@@ -169,7 +178,7 @@ export class AuthService {
 
   async checkEmail(email: string): Promise<{ exists: boolean }> {
     const user = await this.userRepository.findOne({
-      where: { email, deleted: false },
+      where: { email },
     });
     return {
       exists: !!user,
@@ -180,7 +189,7 @@ export class AuthService {
     user: Pick<User, 'id' | 'email' | 'name' | 'role' | 'companies'>;
   }> {
     const user = await this.userRepository.findOne({
-      where: { id: userId, deleted: false },
+      where: { id: userId },
       select: ['id', 'email', 'name', 'role', 'companies'],
     });
     if (!user) {
@@ -191,6 +200,7 @@ export class AuthService {
 
   private async createSessionAndToken(args: {
     user: User;
+    schema: string;
   }): Promise<{ token: string; expiresAt: Date }> {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -200,6 +210,7 @@ export class AuthService {
       userId: args.user.id,
       email: args.user.email,
       role: (args.user.role ?? Role.OPS) as Role,
+      schema: args.schema,
     };
 
     // Create session row first (digest computed after sign)

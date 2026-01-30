@@ -1,9 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { Request } from 'express';
 import { ClsModule } from 'nestjs-cls';
 
 import { SCHEMA_KEY } from './schema.constants';
+import { SchemaHandler } from './schema.service';
 
+@Global()
 @Module({
   imports: [
     ClsModule.forRoot({
@@ -18,6 +20,7 @@ import { SCHEMA_KEY } from './schema.constants';
       },
     }),
   ],
-  exports: [ClsModule],
+  providers: [SchemaHandler],
+  exports: [ClsModule, SchemaHandler],
 })
 export class SchemaModule {}

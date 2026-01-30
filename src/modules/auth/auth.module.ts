@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -13,6 +13,7 @@ import { SchemaValidatorService } from './schema/schema-validator.service';
 import { GlobalBearerStrategy } from './strategies/bearer.strategy';
 import { RolesGuard } from './guards/roles.guard';
 
+@Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Session, Company]),

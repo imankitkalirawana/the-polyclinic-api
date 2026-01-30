@@ -1,4 +1,4 @@
-import { Entity, Column, OneToMany, Index } from 'typeorm';
+import { Entity, Column, OneToMany, Index, DeleteDateColumn } from 'typeorm';
 import { BaseEntity } from 'src/common/entity/base.entity';
 import { CompanyType } from './company.entity';
 import { Role } from 'src/common/enums/role.enum';
@@ -29,9 +29,6 @@ export class User extends BaseEntity {
   @Column({ type: 'boolean', default: false })
   email_verified: boolean;
 
-  @Column({ type: 'boolean', default: false })
-  deleted: boolean;
-
   @Column({ type: 'varchar', length: 100, default: 'Asia/Kolkata' })
   time_zone: string;
 
@@ -49,4 +46,7 @@ export class User extends BaseEntity {
 
   @OneToMany('Session', 'user')
   sessions: Session[];
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

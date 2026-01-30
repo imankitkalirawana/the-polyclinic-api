@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 // import { APP_GUARD } from '@nestjs/core';
 // import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtModule } from '@nestjs/jwt';
@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { publicOrmConfig } from './orm.config';
 import { DatabaseInitService } from './common/database-init.service';
+import { SchemaMiddleware } from './common/middleware/schema.middleware';
 import { PatientsModule } from './modules/client/patients/patients.module';
 import { PaymentsModule } from './modules/client/payments/payments.module';
 import { DoctorsModule } from './modules/client/doctors/doctors.module';
@@ -68,13 +69,14 @@ const options: StandardResponseModuleOptions = {};
     DatabaseModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    DatabaseInitService,
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: ThrottlerGuard,
-    // },
-  ],
+  providers: [AppService, DatabaseInitService, SchemaMiddleware],
+  // {
+  //   provide: APP_GUARD,
+  //   useClass: ThrottlerGuard,
+  // },
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(SchemaMiddleware).forRoutes('*');
+  }
+}

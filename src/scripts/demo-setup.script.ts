@@ -159,10 +159,8 @@ async function run(app: INestApplicationContext) {
         role: u.role ?? defaultRoleForCompanyType(companyType),
         company_type: companyType,
         email_verified: true,
-        deleted: false,
-        time_zone: timeZone ?? 'UTC',
-        permissions: {},
-        companies: [schema.toLowerCase()],
+        time_zone: timeZone,
+        companies: [schema],
       });
       user = await userRepo.save(user);
     } else {

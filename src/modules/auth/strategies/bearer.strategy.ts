@@ -9,18 +9,22 @@ import { Session } from '../entities/session.entity';
 import { User } from '../entities/user.entity';
 import { Role } from 'src/common/enums/role.enum';
 import { SchemaValidatorService } from '../schema/schema-validator.service';
+import { SchemaHandler } from 'src/libs/schema/schema.service';
 
 export interface GlobalJwtPayload {
   sessionId: string;
   userId: string;
   email: string;
   role: Role;
+  /** Company/schema the user logged into; used for tenant isolation (never trust x-schema for auth). */
+  schema: string;
 }
 
 @Injectable()
 export class GlobalBearerStrategy extends PassportStrategy(Strategy, 'bearer') {
   constructor(
     private readonly schemaValidator: SchemaValidatorService,
+    private readonly schemaHandler: SchemaHandler,
     @InjectRepository(Session)
     private readonly sessionRepository: Repository<Session>,
     @InjectRepository(User)
@@ -41,7 +45,7 @@ export class GlobalBearerStrategy extends PassportStrategy(Strategy, 'bearer') {
     }
 
     const jwt = payload as Partial<GlobalJwtPayload>;
-    if (!jwt.sessionId || !jwt.userId) {
+    if (!jwt.sessionId || !jwt.userId || !jwt.schema) {
       throw new UnauthorizedException('Invalid token payload');
     }
 
@@ -60,11 +64,26 @@ export class GlobalBearerStrategy extends PassportStrategy(Strategy, 'bearer') {
     }
 
     const user = await this.userRepository.findOne({
-      where: { id: jwt.userId, deleted: false },
+      where: { id: jwt.userId },
     });
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
+
+    const tokenSchema = jwt.schema.trim().toLowerCase();
+    const allowedCompanies = Array.isArray(user.companies)
+      ? user.companies
+          .map((c) => String(c).trim().toLowerCase())
+          .filter(Boolean)
+      : [];
+    if (!allowedCompanies.includes(tokenSchema)) {
+      throw new UnauthorizedException(
+        'Token schema no longer allowed for this user',
+      );
+    }
+
+    request.schema = tokenSchema;
+    this.schemaHandler.set(tokenSchema);
 
     await this.assertSchemaIfRequired(request, user);
 
@@ -75,6 +94,7 @@ export class GlobalBearerStrategy extends PassportStrategy(Strategy, 'bearer') {
       phone: user.phone ?? null,
       role: user.role,
       sessionId: session.id,
+      schema: tokenSchema,
     };
   }
 
