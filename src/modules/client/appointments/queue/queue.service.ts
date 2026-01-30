@@ -64,16 +64,16 @@ export class QueueService {
     private readonly activityLogService: ActivityLogService,
   ) {}
 
-  private getTenantSlug(): string {
-    const tenantSlug = this.request?.tenantSlug;
-    if (!tenantSlug) {
-      throw new UnauthorizedException('Tenant schema is required');
+  private getSchema(): string {
+    const schema = this.request?.schema;
+    if (!schema) {
+      throw new UnauthorizedException('Schema is required');
     }
-    return tenantSlug;
+    return schema;
   }
 
   private async getConnection() {
-    return await getTenantConnection(this.getTenantSlug());
+    return await getTenantConnection(this.getSchema());
   }
 
   private async getQueueRepository() {
@@ -175,7 +175,7 @@ export class QueueService {
       }
 
       // Get tenant schema name
-      const tenantSlug = this.getTenantSlug();
+      const schema = this.getSchema();
 
       // Build sequence name for this doctor and appointment date
       const sequenceName = buildSequenceName(
@@ -184,12 +184,12 @@ export class QueueService {
       );
 
       // Ensure sequence exists (with advisory lock protection)
-      await ensureSequenceExists(queryRunner, tenantSlug, sequenceName);
+      await ensureSequenceExists(queryRunner, schema, sequenceName);
 
       // Get next token number from sequence
       const sequenceNumber = await getNextTokenNumber(
         queryRunner,
-        tenantSlug,
+        schema,
         sequenceName,
       );
 

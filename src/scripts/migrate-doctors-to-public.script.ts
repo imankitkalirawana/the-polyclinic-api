@@ -25,9 +25,7 @@ async function run(app: INestApplicationContext) {
   const publicDoctorRepo = publicDataSource.getRepository(PublicDoctor);
   const membershipRepo = publicDataSource.getRepository(DoctorTenantMembership);
 
-  const companies = await companyRepo.find({
-    where: { deleted: false },
-  });
+  const companies = await companyRepo.find();
 
   const tenantSlugs = companies
     .map((c) => (c.schema ?? '').trim().toLowerCase())

@@ -10,7 +10,7 @@ import { Company } from './entities/company.entity';
 import { UsersModule } from './users/users.module';
 import { CompanyModule } from './companies/company.module';
 import { SchemaValidatorService } from './schema/schema-validator.service';
-import { GlobalBearerStrategy } from './strategies/global-bearer.strategy';
+import { GlobalBearerStrategy } from './strategies/bearer.strategy';
 import { RolesGuard } from './guards/roles.guard';
 
 @Module({

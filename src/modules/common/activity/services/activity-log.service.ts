@@ -15,17 +15,17 @@ export class ActivityLogService {
 
   private readonly request: Request;
 
-  private getTenantSlug(): string {
-    const tenantSlug = this.request?.tenantSlug;
-    if (!tenantSlug) {
-      throw new UnauthorizedException('Tenant schema is required');
+  private getSchema(): string {
+    const schema = this.request?.schema;
+    if (!schema) {
+      throw new UnauthorizedException('Schema is required');
     }
-    return tenantSlug;
+    return schema;
   }
 
   async getActivityLogsByEntity(entityType: EntityType, entityId: string) {
-    const tenantSlug = this.getTenantSlug();
-    const connection = await getTenantConnection(tenantSlug);
+    const schema = this.getSchema();
+    const connection = await getTenantConnection(schema);
     const repository: Repository<ActivityLog> =
       connection.getRepository(ActivityLog);
     const userRepository: Repository<User> = connection.getRepository(User);
@@ -110,8 +110,8 @@ export class ActivityLogService {
       return [];
     }
 
-    const tenantSlug = this.getTenantSlug();
-    const connection = await getTenantConnection(tenantSlug);
+    const schema = this.getSchema();
+    const connection = await getTenantConnection(schema);
     const repository: Repository<ActivityLog> =
       connection.getRepository(ActivityLog);
     const userRepository: Repository<User> = connection.getRepository(User);

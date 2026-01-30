@@ -34,11 +34,11 @@ export class PaymentsService {
   ) {}
 
   private getTenantSlug(): string {
-    const tenantSlug = this.request?.tenantSlug;
-    if (!tenantSlug) {
-      throw new UnauthorizedException('Tenant schema is required');
+    const schema = this.request?.schema;
+    if (!schema) {
+      throw new UnauthorizedException('Schema is required');
     }
-    return tenantSlug;
+    return schema;
   }
 
   private async getPaymentRepository(): Promise<Repository<Payment>> {

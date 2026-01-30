@@ -75,12 +75,10 @@ async function run(app: INestApplicationContext) {
       schema: internalSchemaName,
       currency: 'INR',
       time_zone: 'Asia/Kolkata',
-      deleted: false,
     });
     internalCompany = await companyRepo.save(internalCompany);
-  } else if (internalCompany.deleted) {
-    internalCompany.deleted = false;
-    internalCompany = await companyRepo.save(internalCompany);
+  } else if (internalCompany.deletedAt) {
+    await companyRepo.softRemove(internalCompany);
   }
 
   await dataSource.query(`CREATE SCHEMA IF NOT EXISTS "${internalSchemaName}"`);
@@ -99,12 +97,10 @@ async function run(app: INestApplicationContext) {
       schema: schemaName,
       currency: 'INR',
       time_zone: 'Asia/Kolkata',
-      deleted: false,
     });
     company = await companyRepo.save(company);
-  } else if (company.deleted) {
-    company.deleted = false;
-    company = await companyRepo.save(company);
+  } else if (company.deletedAt) {
+    await companyRepo.softRemove(company);
   }
 
   await dataSource.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);

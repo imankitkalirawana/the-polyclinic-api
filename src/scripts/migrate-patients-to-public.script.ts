@@ -38,9 +38,7 @@ async function run(app: INestApplicationContext) {
   );
   const clinicalRepo = publicDataSource.getRepository(ClinicalRecord);
 
-  const companies = await companyRepo.find({
-    where: { deleted: false },
-  });
+  const companies = await companyRepo.find();
 
   const tenantSlugs = companies
     .map((c) => (c.schema ?? '').trim().toLowerCase())

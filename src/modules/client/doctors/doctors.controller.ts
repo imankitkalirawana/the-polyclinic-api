@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
 import { BearerAuthGuard } from '@/auth/guards/bearer-auth.guard';
 import { RolesGuard } from '@/auth/guards/roles.guard';
@@ -16,23 +8,11 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '@/auth/decorators/current-user.decorator';
-import { StandardParam, StandardParams } from 'nest-standard-response';
-import { CreateDoctorDto } from './dto/create-doctor.dto';
 
 @Controller('client/doctors')
 @UseGuards(BearerAuthGuard, RolesGuard)
 export class DoctorsController {
   constructor(private readonly doctorsService: DoctorsService) {}
-
-  @Post()
-  @Roles(Role.ADMIN)
-  async create(
-    @Body() createDoctorDto: CreateDoctorDto,
-    @StandardParam() params: StandardParams,
-  ) {
-    params.setMessage(`Doctor created successfully`);
-    return this.doctorsService.create(createDoctorDto);
-  }
 
   @Get()
   @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST, Role.PATIENT)

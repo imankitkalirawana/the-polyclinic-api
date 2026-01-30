@@ -29,21 +29,19 @@ export class CompanyService {
       schema: dto.schema ?? null,
       currency: dto.currency ?? 'INR',
       time_zone: dto.time_zone ?? 'Asia/Kolkata',
-      deleted: false,
     });
     return await this.companyRepository.save(company);
   }
 
   async findAll(): Promise<Company[]> {
     return await this.companyRepository.find({
-      where: { deleted: false },
       order: { createdAt: 'DESC' },
     });
   }
 
   async findOne(id: string): Promise<Company> {
     const company = await this.companyRepository.findOne({
-      where: { id, deleted: false },
+      where: { id },
     });
     if (!company) {
       throw new NotFoundException('Company not found');
@@ -62,7 +60,6 @@ export class CompanyService {
 
   async softRemove(id: string): Promise<void> {
     const company = await this.findOne(id);
-    company.deleted = true;
-    await this.companyRepository.save(company);
+    await this.companyRepository.softRemove(company);
   }
 }

@@ -11,9 +11,7 @@ import { Doctor } from './modules/public/doctors/entities/doctor.entity';
 import { DoctorTenantMembership } from './modules/public/doctors/entities/doctor-tenant-membership.entity';
 import { DoctorMembershipAuditLog } from './modules/public/doctors/entities/doctor-membership-audit.entity';
 
-export function getTenantConnectionConfig(
-  tenantSlug: string,
-): DataSourceOptions {
+export function getTenantConnectionConfig(schema: string): DataSourceOptions {
   return {
     type: 'postgres',
     host: process.env.DB_HOST,
@@ -21,7 +19,7 @@ export function getTenantConnectionConfig(
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    schema: tenantSlug,
+    schema,
     entities: [
       join(__dirname, './modules/client/**/entities/*.entity.{ts,js}'),
       ActivityLog,

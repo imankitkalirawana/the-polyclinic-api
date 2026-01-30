@@ -29,7 +29,7 @@ export class UsersService {
   ) {}
 
   private async getConnection() {
-    return await getTenantConnection(this.request.tenantSlug);
+    return await getTenantConnection(this.request.schema);
   }
 
   private async getUserRepository() {
@@ -42,7 +42,7 @@ export class UsersService {
     const user = await userRepository.findOne({
       where: {
         email,
-        companies: ArrayContains([this.request.tenantSlug]),
+        companies: ArrayContains([this.request.schema]),
       },
     });
     if (!user) {
@@ -55,7 +55,7 @@ export class UsersService {
   async checkEmailIsNotTaken(email: string) {
     const userRepository = await this.getUserRepository();
     const user = await userRepository.findOne({
-      where: { email, companies: ArrayContains([this.request.tenantSlug]) },
+      where: { email, companies: ArrayContains([this.request.schema]) },
     });
     if (user) {
       throw new ConflictException('Email already taken');
@@ -75,14 +75,14 @@ export class UsersService {
   async findAll(): Promise<User[]> {
     return await this.userRepository.find({
       where: {
-        companies: ArrayContains([this.request.tenantSlug]),
+        companies: ArrayContains([this.request.schema]),
       },
     });
   }
 
   async findOne(id: string): Promise<User> {
     const user = await this.userRepository.findOne({
-      where: { id, companies: ArrayContains([this.request.tenantSlug]) },
+      where: { id, companies: ArrayContains([this.request.schema]) },
     });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -94,7 +94,7 @@ export class UsersService {
     const user = await this.userRepository.findOne({
       where: {
         email,
-        companies: ArrayContains([this.request.tenantSlug]),
+        companies: ArrayContains([this.request.schema]),
       },
     });
     if (!user) {

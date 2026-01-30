@@ -66,7 +66,7 @@ export class GlobalBearerStrategy extends PassportStrategy(Strategy, 'bearer') {
       throw new UnauthorizedException('User not found');
     }
 
-    await this.assertTenantIfRequired(request, user);
+    await this.assertSchemaIfRequired(request, user);
 
     return {
       userId: user.id,
@@ -78,23 +78,21 @@ export class GlobalBearerStrategy extends PassportStrategy(Strategy, 'bearer') {
     };
   }
 
-  private async assertTenantIfRequired(request: Request, user: User) {
+  private async assertSchemaIfRequired(request: Request, user: User) {
     const path = request.originalUrl || request.url || '';
-    const needsTenant =
+    const needsSchema =
       path.startsWith('/api/v1/client/') || path.startsWith('/api/v1/activity');
 
-    if (!needsTenant) {
+    if (!needsSchema) {
       return;
     }
 
-    const tenantSlug = request.tenantSlug;
-    if (!tenantSlug) {
-      throw new UnauthorizedException(
-        'x-tenant header is required for this endpoint',
-      );
+    const schema = request.schema;
+    if (!schema) {
+      throw new UnauthorizedException('Schema is required for this endpoint');
     }
 
-    const normalized = tenantSlug.trim().toLowerCase();
+    const normalized = schema.trim().toLowerCase();
     const allowedCompanies = Array.isArray(user.companies)
       ? user.companies
       : [];
@@ -103,7 +101,7 @@ export class GlobalBearerStrategy extends PassportStrategy(Strategy, 'bearer') {
       .filter(Boolean);
 
     if (!allowed.includes(normalized)) {
-      throw new UnauthorizedException('User is not allowed for this tenant');
+      throw new UnauthorizedException('User is not allowed for this schema');
     }
 
     // Ensure schema exists in DB (cached)

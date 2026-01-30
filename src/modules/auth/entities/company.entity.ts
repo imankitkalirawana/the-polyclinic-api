@@ -1,4 +1,4 @@
-import { Entity, Column, Index } from 'typeorm';
+import { Entity, Column, Index, DeleteDateColumn } from 'typeorm';
 import { BaseEntity } from 'src/common/entity/base.entity';
 
 export enum CompanyType {
@@ -29,6 +29,6 @@ export class Company extends BaseEntity {
   @Column({ type: 'varchar', length: 100, default: 'Asia/Kolkata' })
   time_zone: string;
 
-  @Column({ type: 'boolean', default: false })
-  deleted: boolean;
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

@@ -14,7 +14,7 @@ declare global {
     }
 
     interface Request {
-      tenantSlug?: string;
+      schema?: string;
     }
   }
 }

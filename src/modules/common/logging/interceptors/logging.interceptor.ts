@@ -34,7 +34,7 @@ export class LoggingInterceptor implements NestInterceptor {
     response.setHeader('x-request-id', requestId);
 
     // Extract tenant slug if available
-    const tenantSlug = request?.tenantSlug;
+    const schema = request?.schema;
 
     // Extract user ID if available (from JWT or session)
     const userId = request?.user?.userId;
@@ -56,7 +56,7 @@ export class LoggingInterceptor implements NestInterceptor {
       requestId,
       httpMethod: method,
       httpUrl: url,
-      tenantSlug,
+      schema,
       userId,
       // Don't log sensitive data
       ...(body &&
@@ -82,7 +82,7 @@ export class LoggingInterceptor implements NestInterceptor {
           httpUrl: url,
           httpStatus: response.statusCode,
           duration,
-          tenantSlug,
+          schema,
           userId,
           responseHeaders: this.sanitizeHeaders(response.getHeaders()),
         };
@@ -107,7 +107,7 @@ export class LoggingInterceptor implements NestInterceptor {
           httpUrl: url,
           httpStatus: error.status || 500,
           duration,
-          tenantSlug,
+          schema,
           userId,
           responseHeaders: this.sanitizeHeaders(response.getHeaders()),
           error: {

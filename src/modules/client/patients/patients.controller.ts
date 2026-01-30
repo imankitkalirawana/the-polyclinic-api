@@ -10,7 +10,6 @@ import {
   Query,
 } from '@nestjs/common';
 import { PatientsService } from './patients.service';
-import { UpdatePatientDto } from './dto/update-patient.dto';
 import { BearerAuthGuard } from '@/auth/guards/bearer-auth.guard';
 import { RolesGuard } from '@/auth/guards/roles.guard';
 import { Roles } from '@/auth/decorators/roles.decorator';
@@ -78,15 +77,6 @@ export class PatientsController {
   @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
   async getClinicalRecords(@Param('id') id: string) {
     return this.patientsService.getClinicalRecords(id);
-  }
-
-  @Patch(':id')
-  @Roles(Role.ADMIN, Role.DOCTOR, Role.RECEPTIONIST)
-  async update(
-    @Param('id') id: string,
-    @Body() updatePatientDto: UpdatePatientDto,
-  ) {
-    return this.patientsService.update(id, updatePatientDto);
   }
 
   @Delete(':id')

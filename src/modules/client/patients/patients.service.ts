@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
-import { UpdatePatientDto } from './dto/update-patient.dto';
 import { ArrayContains, Repository } from 'typeorm';
 import { formatPatient } from './patients.helper';
 import { CreatePatientDto } from './dto/create-patient.dto';
@@ -35,11 +34,11 @@ export class PatientsService {
   ) {}
 
   private getTenantSlug(): string {
-    const tenantSlug = this.request.tenantSlug;
-    if (!tenantSlug) {
-      throw new NotFoundException('Tenant schema not available');
+    const schema = this.request.schema;
+    if (!schema) {
+      throw new NotFoundException('Schema not available');
     }
-    return tenantSlug;
+    return schema;
   }
 
   private async getConnection() {
@@ -317,8 +316,6 @@ export class PatientsService {
     await this.assertActiveMembership(patient.id);
     return formatPatient(patient);
   }
-
-  async update(patientId: string, updatePatientDto: UpdatePatientDto) {}
 
   async remove(patientId: string) {
     const tenantSlug = this.getTenantSlug().trim().toLowerCase();

@@ -47,10 +47,10 @@ export class ActivityService {
     }
 
     try {
-      const tenantSlug = this.request?.tenantSlug;
+      const schema = this.request?.schema;
       const eventPayload = {
         ...payload,
-        tenantSlug,
+        schema,
       };
       this.eventEmitter.emit('activity.log', eventPayload);
     } catch (error) {

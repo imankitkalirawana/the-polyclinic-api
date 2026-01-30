@@ -1,20 +1,10 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
 import { ArrayContains, Repository } from 'typeorm';
 import { Doctor } from '@/public/doctors/entities/doctor.entity';
-import {
-  DoctorTenantMembership,
-  DoctorTenantMembershipStatus,
-} from '@/public/doctors/entities/doctor-tenant-membership.entity';
+import { DoctorTenantMembership } from '@/public/doctors/entities/doctor-tenant-membership.entity';
 import { formatDoctor } from './doctors.helper';
-import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { getTenantConnection } from 'src/common/db/tenant-connection';
 import {
@@ -22,7 +12,6 @@ import {
   DoctorMembershipAuditLog,
 } from '@/public/doctors/entities/doctor-membership-audit.entity';
 import { UsersService } from '@/auth/users/users.service';
-import { Role } from 'src/common/enums/role.enum';
 
 @Injectable()
 export class DoctorsService {
@@ -31,16 +20,8 @@ export class DoctorsService {
     private readonly usersService: UsersService,
   ) {}
 
-  private getTenantSlug(): string {
-    const tenantSlug = this.request?.tenantSlug;
-    if (!tenantSlug) {
-      throw new NotFoundException('Tenant schema not available');
-    }
-    return String(tenantSlug).trim().toLowerCase();
-  }
-
   private async getConnection() {
-    return await getTenantConnection(this.getTenantSlug());
+    return await getTenantConnection(this.request.schema);
   }
 
   private async getDoctorRepository(): Promise<Repository<Doctor>> {
@@ -92,40 +73,15 @@ export class DoctorsService {
     );
   }
 
-  private async assertActiveDoctorMembership(doctorId: string) {
-    const tenantSlug = this.getTenantSlug();
-    const membershipRepo = await this.getMembershipRepository();
-    const membership = await membershipRepo.findOne({
-      where: {
-        doctorId,
-        tenantSlug,
-        status: DoctorTenantMembershipStatus.ACTIVE,
-      },
-      relations: ['doctor', 'doctor.user'],
-    });
-    if (!membership) {
-      throw new NotFoundException('Doctor not found');
-    }
-    return membership;
-  }
-
-  async getDoctorMembership(doctorId: string) {
-    return this.assertActiveDoctorMembership(doctorId);
-  }
-
-  async create(createDoctorDto: CreateDoctorDto) {}
-
   async findAll(search?: string) {
-    const tenantSlug = this.getTenantSlug();
     const membershipRepo = await this.getMembershipRepository();
 
     const qb = membershipRepo
       .createQueryBuilder('membership')
       .innerJoinAndSelect('membership.doctor', 'doctor')
       .innerJoinAndSelect('doctor.user', 'user')
-      .where('membership.tenant_slug = :tenantSlug', { tenantSlug })
-      .andWhere('membership.status = :status', {
-        status: DoctorTenantMembershipStatus.ACTIVE,
+      .where('membership.companies = :companies', {
+        companies: [this.request.schema],
       })
       .orderBy('user.name', 'ASC')
       .take(100);
@@ -146,7 +102,12 @@ export class DoctorsService {
   async findOne(id: string) {
     const doctorRepository = await this.getDoctorRepository();
     const doctor = await doctorRepository.findOne({
-      where: { id, user: { companies: ArrayContains([this.getTenantSlug()]) } },
+      where: {
+        id,
+        user: {
+          companies: ArrayContains([this.request.schema]),
+        },
+      },
       relations: ['user'],
     });
     if (!doctor) throw new NotFoundException('Doctor not found');
@@ -160,13 +121,11 @@ export class DoctorsService {
       relations: ['user'],
     });
     if (!doctor) throw new NotFoundException('Doctor not found');
-    const membership = await this.assertActiveDoctorMembership(doctor.id);
-    return formatDoctor(doctor, this.request.user.role, membership);
+    return formatDoctor(doctor, this.request.user.role, null);
   }
 
   // update doctor
   async update(userId: string, updateDoctorDto: UpdateDoctorDto) {
-    const tenantSlug = this.getTenantSlug();
     const doctorRepository = await this.getDoctorRepository();
     const membershipRepo = await this.getMembershipRepository();
 
@@ -175,8 +134,6 @@ export class DoctorsService {
       relations: ['user'],
     });
     if (!doctor) throw new NotFoundException('Doctor not found');
-
-    await this.assertActiveDoctorMembership(doctor.id);
 
     // Global fields
     if (updateDoctorDto.specialization !== undefined) {
@@ -197,7 +154,6 @@ export class DoctorsService {
     const membership = await membershipRepo.findOne({
       where: {
         doctorId: doctor.id,
-        tenantSlug,
       },
     });
     if (!membership) throw new NotFoundException('Doctor not found');

@@ -7,7 +7,7 @@ export interface LogMetadata {
   traceId?: string;
   spanId?: string;
   userId?: string;
-  tenantSlug?: string;
+  schema?: string;
   requestId?: string;
   httpMethod?: string;
   httpUrl?: string;
