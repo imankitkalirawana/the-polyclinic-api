@@ -1,4 +1,11 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  Index,
+  DeleteDateColumn,
+} from 'typeorm';
 import { BaseEntity } from 'src/common/entity/base.entity';
 import { User } from './user.entity';
 
@@ -11,12 +18,6 @@ export class Session extends BaseEntity {
   @Column({ type: 'text' })
   @Index()
   auth_token_digest: string; // Hashed JWT token
-
-  @Column({ type: 'boolean', default: true })
-  logged_in: boolean;
-
-  @Column({ type: 'timestamp', nullable: true })
-  logged_out_at: Date | null;
 
   @Column({ type: 'timestamp' })
   @Index()
@@ -32,7 +33,6 @@ export class Session extends BaseEntity {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  isValid(): boolean {
-    return this.logged_in && new Date() < this.expires_at;
-  }
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

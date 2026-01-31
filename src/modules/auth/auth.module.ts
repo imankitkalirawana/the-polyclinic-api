@@ -7,16 +7,26 @@ import { AuthService } from './auth.service';
 import { User } from './entities/user.entity';
 import { Session } from './entities/session.entity';
 import { Company } from './entities/company.entity';
+import { Verification } from './entities/verification.entity';
+import { VerificationService } from './verification.service';
 import { UsersModule } from './users/users.module';
 import { CompanyModule } from './companies/company.module';
 import { SchemaValidatorService } from './schema/schema-validator.service';
 import { GlobalBearerStrategy } from './strategies/bearer.strategy';
 import { RolesGuard } from './guards/roles.guard';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Global()
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Session, Company]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 10 * 60000, // 10 minutes
+        limit: 3,
+      },
+    ]),
+    TypeOrmModule.forFeature([User, Session, Company, Verification]),
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
@@ -27,9 +37,14 @@ import { RolesGuard } from './guards/roles.guard';
   controllers: [AuthController],
   providers: [
     AuthService,
+    VerificationService,
     SchemaValidatorService,
     GlobalBearerStrategy,
     RolesGuard,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
   exports: [
     AuthService,

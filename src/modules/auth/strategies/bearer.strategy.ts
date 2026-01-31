@@ -53,7 +53,7 @@ export class GlobalBearerStrategy extends PassportStrategy(Strategy, 'bearer') {
     const session = await this.sessionRepository.findOne({
       where: { id: jwt.sessionId },
     });
-    if (!session || !session.logged_in || session.user_id !== jwt.userId) {
+    if (!session || session.user_id !== jwt.userId) {
       throw new UnauthorizedException('Session not found');
     }
     if (session.auth_token_digest !== digest) {
