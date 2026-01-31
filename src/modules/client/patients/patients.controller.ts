@@ -3,24 +3,22 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
   Query,
 } from '@nestjs/common';
 import { PatientsService } from './patients.service';
-import { UpdatePatientDto } from './dto/update-patient.dto';
-import { BearerAuthGuard } from '../auth/guards/bearer-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { BearerAuthGuard } from '@/auth/guards/bearer-auth.guard';
+import { RolesGuard } from '@/auth/guards/roles.guard';
+import { Roles } from '@/auth/decorators/roles.decorator';
 import { Role } from 'src/common/enums/role.enum';
 import {
   CurrentUser,
   CurrentUserPayload,
-} from '../auth/decorators/current-user.decorator';
+} from '@/auth/decorators/current-user.decorator';
 import { StandardParam, StandardParams } from 'nest-standard-response';
-import { CreateUserDto } from '../users/dto/create-user.dto';
+import { CreatePatientDto } from './dto/create-patient.dto';
 
 @Controller('client/patients')
 @UseGuards(BearerAuthGuard, RolesGuard)
@@ -30,22 +28,29 @@ export class PatientsController {
   @Post()
   @Roles(Role.ADMIN, Role.DOCTOR, Role.RECEPTIONIST)
   async create(
-    @Body() createUserDto: CreateUserDto,
+    @Body() createPatientDto: CreatePatientDto,
     @StandardParam() params: StandardParams,
   ) {
     params.setMessage(`Patient created successfully`);
-    return this.patientsService.create(createUserDto);
+    return this.patientsService.create(createPatientDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
+  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST, Role.PATIENT)
   async findAll(@Query('search') search?: string) {
     return this.patientsService.findAll(search);
   }
 
   @Get('me')
   async getMe(@CurrentUser() user: CurrentUserPayload) {
-    return this.patientsService.findByUserId(user.userId);
+    return this.patientsService.findByUserId(user.user_id);
+  }
+
+  @Get('me/clinical-records')
+  @Roles(Role.PATIENT)
+  async getMyClinicalRecords(@CurrentUser() user: CurrentUserPayload) {
+    const patient = await this.patientsService.findByUserId(user.user_id);
+    return this.patientsService.getClinicalRecords(patient.id);
   }
 
   @Get(':id')
@@ -54,13 +59,10 @@ export class PatientsController {
     return this.patientsService.findOne(id);
   }
 
-  @Patch(':id')
-  @Roles(Role.ADMIN, Role.DOCTOR, Role.RECEPTIONIST)
-  async update(
-    @Param('id') id: string,
-    @Body() updatePatientDto: UpdatePatientDto,
-  ) {
-    return this.patientsService.update(id, updatePatientDto);
+  @Get(':id/clinical-records')
+  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
+  async getClinicalRecords(@Param('id') id: string) {
+    return this.patientsService.getClinicalRecords(id);
   }
 
   @Delete(':id')

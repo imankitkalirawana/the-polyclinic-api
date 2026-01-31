@@ -5,7 +5,6 @@ import { ActivityLog } from './entities/activity-log.entity';
 import { ActivityService } from './services/activity.service';
 import { ActivityLogService } from './services/activity-log.service';
 import { ActivityListener } from './listeners/activity.listener';
-import { TenancyModule } from '@/tenancy/tenancy.module';
 import { ActivityController } from './activity.controller';
 
 @Global()
@@ -13,7 +12,6 @@ import { ActivityController } from './activity.controller';
   imports: [
     EventEmitterModule.forRoot(),
     TypeOrmModule.forFeature([ActivityLog]),
-    TenancyModule,
   ],
   providers: [
     {

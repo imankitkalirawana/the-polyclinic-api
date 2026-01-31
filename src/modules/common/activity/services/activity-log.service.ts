@@ -1,34 +1,34 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
-import { DataSource, Repository, In } from 'typeorm';
-import { BaseTenantService } from '@/tenancy/base-tenant.service';
-import { CONNECTION } from '@/tenancy/tenancy.symbols';
-import { TenantAuthInitService } from '@/tenancy/tenant-auth-init.service';
+import { Repository, In } from 'typeorm';
 import { ActivityLog } from '../entities/activity-log.entity';
 import { EntityType } from '../enums/entity-type.enum';
-import { TenantUser } from '@/client/users/entities/tenant-user.entity';
-import { getTenantConnection } from '@/tenancy/connection-pool';
+import { User } from '@/auth/entities/user.entity';
+import { getTenantConnection } from 'src/common/db/tenant-connection';
 
 @Injectable()
-export class ActivityLogService extends BaseTenantService {
-  constructor(
-    @Inject(REQUEST) request: Request,
-    @Inject(CONNECTION) connection: DataSource | null,
-    tenantAuthInitService: TenantAuthInitService,
-  ) {
-    super(request, connection, tenantAuthInitService, ActivityLogService.name);
+export class ActivityLogService {
+  constructor(@Inject(REQUEST) request: Request) {
+    this.request = request;
+  }
+
+  private readonly request: Request;
+
+  private getSchema(): string {
+    const schema = this.request?.schema;
+    if (!schema) {
+      throw new UnauthorizedException('Schema is required');
+    }
+    return schema;
   }
 
   async getActivityLogsByEntity(entityType: EntityType, entityId: string) {
-    await this.ensureTablesExist();
-
-    const tenantSlug = this.getTenantSlug();
-    const connection = await getTenantConnection(tenantSlug);
+    const schema = this.getSchema();
+    const connection = await getTenantConnection(schema);
     const repository: Repository<ActivityLog> =
       connection.getRepository(ActivityLog);
-    const userRepository: Repository<TenantUser> =
-      connection.getRepository(TenantUser);
+    const userRepository: Repository<User> = connection.getRepository(User);
 
     const activityLogs = await repository.find({
       where: {
@@ -51,7 +51,7 @@ export class ActivityLogService extends BaseTenantService {
     ];
 
     // Fetch all stakeholders in one query
-    const stakeholdersMap = new Map<string, TenantUser>();
+    const stakeholdersMap = new Map<string, User>();
     if (stakeholderIds.length > 0) {
       const stakeholders = await userRepository.find({
         where: { id: In(stakeholderIds) },
@@ -82,7 +82,6 @@ export class ActivityLogService extends BaseTenantService {
                     name: user.name,
                     email: user.email,
                     phone: user.phone,
-                    image: user.image,
                     role: user.role,
                   }
                 : null;
@@ -97,7 +96,6 @@ export class ActivityLogService extends BaseTenantService {
             id: log.actor.id,
             name: log.actor.name,
             email: log.actor.email,
-            image: log.actor.image,
             role: log.actor.role,
             type: log.actorType,
           }
@@ -106,20 +104,17 @@ export class ActivityLogService extends BaseTenantService {
   }
 
   async getActivityLogsByStakeholder(userId?: string) {
-    await this.ensureTablesExist();
-
-    const currentUserId = userId || (this.request as any)?.user?.userId;
+    const currentUserId = userId || this.request?.user?.userId;
 
     if (!currentUserId) {
       return [];
     }
 
-    const tenantSlug = this.getTenantSlug();
-    const connection = await getTenantConnection(tenantSlug);
+    const schema = this.getSchema();
+    const connection = await getTenantConnection(schema);
     const repository: Repository<ActivityLog> =
       connection.getRepository(ActivityLog);
-    const userRepository: Repository<TenantUser> =
-      connection.getRepository(TenantUser);
+    const userRepository: Repository<User> = connection.getRepository(User);
 
     // Use query builder for JSONB array containment query (@> operator)
     const activityLogs = await repository
@@ -141,7 +136,7 @@ export class ActivityLogService extends BaseTenantService {
     ];
 
     // Fetch all stakeholders in one query
-    const stakeholdersMap = new Map<string, TenantUser>();
+    const stakeholdersMap = new Map<string, User>();
     if (stakeholderIds.length > 0) {
       const stakeholders = await userRepository.find({
         where: { id: In(stakeholderIds) },
@@ -172,7 +167,6 @@ export class ActivityLogService extends BaseTenantService {
                     name: user.name,
                     email: user.email,
                     phone: user.phone,
-                    image: user.image,
                     role: user.role,
                   }
                 : null;
@@ -187,7 +181,6 @@ export class ActivityLogService extends BaseTenantService {
             id: log.actor.id,
             name: log.actor.name,
             email: log.actor.email,
-            image: log.actor.image,
             role: log.actor.role,
             type: log.actorType,
           }

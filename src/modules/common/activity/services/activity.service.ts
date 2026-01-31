@@ -47,10 +47,10 @@ export class ActivityService {
     }
 
     try {
-      const tenantSlug = (this.request as any)?.tenantSlug;
+      const schema = this.request?.schema;
       const eventPayload = {
         ...payload,
-        tenantSlug,
+        schema,
       };
       this.eventEmitter.emit('activity.log', eventPayload);
     } catch (error) {
@@ -228,10 +228,10 @@ export class ActivityService {
   }
 
   private getActorId(): string | null {
-    return (this.request as any)?.user?.userId || null;
+    return this.request?.user?.userId || null;
   }
 
   private getActorRole(): string | null {
-    return (this.request as any)?.user?.role || null;
+    return this.request?.user?.role || null;
   }
 }

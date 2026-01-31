@@ -2,129 +2,189 @@ import {
   Injectable,
   NotFoundException,
   Inject,
-  BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
-import { DataSource, ILike } from 'typeorm';
-import { Patient } from './entities/patient.entity';
-import { UpdatePatientDto } from './dto/update-patient.dto';
-import { BaseTenantService } from '../../tenancy/base-tenant.service';
-import { CONNECTION } from '../../tenancy/tenancy.symbols';
-import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
+import { ArrayContains, Repository } from 'typeorm';
 import { formatPatient } from './patients.helper';
-import { CreateUserDto } from '../users/dto/create-user.dto';
+import { CreatePatientDto } from './dto/create-patient.dto';
+import { getTenantConnection } from 'src/common/db/tenant-connection';
+import { subYears } from 'date-fns';
+import { UsersService } from '@/auth/users/users.service';
+import { Patient } from '@/public/patients/entities/patient.entity';
+
+import {
+  ClinicalRecord,
+  ClinicalRecordType,
+} from '@/public/clinical/entities/clinical-record.entity';
 
 @Injectable()
-export class PatientsService extends BaseTenantService {
+export class PatientsService {
   constructor(
-    @Inject(REQUEST) request: Request,
-    @Inject(CONNECTION) connection: DataSource | null,
-    tenantAuthInitService: TenantAuthInitService,
-  ) {
-    super(request, connection, tenantAuthInitService, PatientsService.name);
-  }
+    @Inject(REQUEST) private readonly request: Request,
+    private readonly usersService: UsersService,
+  ) {}
 
-  private getPatientRepository() {
-    return this.getRepository(Patient);
-  }
-
-  async create(createPatientDto: CreateUserDto) {
-    if (!createPatientDto.userId) {
-      throw new BadRequestException('User ID is required to create a patient');
+  private getTenantSlug(): string {
+    const schema = this.request.schema;
+    if (!schema) {
+      throw new NotFoundException('Schema not available');
     }
-    return await this.getPatientRepository().save(createPatientDto);
+    return schema;
   }
 
-  async findAll(search?: string) {
-    await this.ensureTablesExist();
-    const patients = await this.getRepository(Patient).find({
-      where: search
-        ? [
-            { user: { name: ILike(`%${search}%`) } },
-            { user: { email: ILike(`%${search}%`) } },
-            { user: { phone: ILike(`%${search}%`) } },
-          ]
-        : {},
+  private async getConnection() {
+    return await getTenantConnection(this.getTenantSlug());
+  }
+
+  private async getPatientRepository(): Promise<Repository<Patient>> {
+    const connection = await this.getConnection();
+    return connection.getRepository(Patient);
+  }
+
+  private async getClinicalRecordRepository(): Promise<
+    Repository<ClinicalRecord>
+  > {
+    const connection = await this.getConnection();
+    return connection.getRepository(ClinicalRecord);
+  }
+
+  private getActor() {
+    const actor = this.request?.user;
+    return {
+      actorUserId: actor?.userId ?? null,
+      actorRole: actor?.role ?? null,
+    };
+  }
+
+  private calculateDob(age: number): Date {
+    const currentDate = new Date();
+    const dob = subYears(currentDate, age);
+    return dob;
+  }
+
+  private async findPatientEntityByUserId(userId: string) {
+    const repo = await this.getPatientRepository();
+    return await repo.findOne({
+      where: { user_id: userId },
       relations: ['user'],
-      order: {
-        user: { name: 'ASC' },
+    });
+  }
+
+  async getClinicalRecords(patientId: string) {
+    const repo = await this.getClinicalRecordRepository();
+
+    const qb = repo
+      .createQueryBuilder('record')
+      .where('record.patient_id = :patientId', { patientId })
+      .orderBy('record.occurred_at', 'DESC')
+      .take(100);
+
+    const records = await qb.getMany();
+    return records.map((r) => ({
+      id: r.id,
+      patientId: r.patientId,
+      sourceTenantSlug: r.sourceTenantSlug,
+      encounterRef: r.encounterRef,
+      occurredAt: r.occurredAt,
+      recordType: r.recordType as ClinicalRecordType,
+      payload: r.payload ?? {},
+      amendedRecordId: r.amendedRecordId ?? null,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+  }
+
+  async checkPatientExists(patientId: string, earlyReturn?: boolean) {
+    const patientRepository = await this.getPatientRepository();
+    const patient = await patientRepository.findOne({
+      where: {
+        id: patientId,
+        user: {
+          companies: ArrayContains([this.getTenantSlug()]),
+        },
       },
-      take: 30,
     });
 
-    return patients.map(formatPatient);
+    if (earlyReturn && !patient) {
+      throw new NotFoundException('Patient not found');
+    }
+
+    return {
+      exists: !!patient,
+      patient,
+    };
   }
 
-  async findByUserId(userId: string) {
-    await this.ensureTablesExist();
+  async checkPatientExistsByEmail(email: string, earlyReturn?: boolean) {
+    const patientRepository = await this.getPatientRepository();
+    const patient = await patientRepository.findOne({
+      where: {
+        user: {
+          email,
+          companies: ArrayContains([this.getTenantSlug()]),
+        },
+      },
+    });
 
-    const patient = await this.getRepository(Patient).findOne({
-      where: { userId },
+    if (earlyReturn && patient) {
+      throw new ConflictException('Patient with this email already exists');
+    }
+
+    return {
+      exists: !!patient,
+      patient,
+    };
+  }
+
+  async create(createPatientDto: CreatePatientDto) {
+    await this.checkPatientExistsByEmail(createPatientDto.email, true);
+
+    const user = await this.usersService.findOneByEmail(createPatientDto.email);
+
+    const patientRepository = await this.getPatientRepository();
+    const patient = await patientRepository.save({
+      user_id: user.id,
+      gender: createPatientDto.gender,
+      dob: createPatientDto.dob,
+      address: createPatientDto.address,
+    });
+
+    return patient;
+  }
+
+  async findAll(_search?: string) {}
+
+  async findByUserId(userId: string) {
+    const repo = await this.getPatientRepository();
+    const patient = await repo.findOne({
+      where: { user_id: userId },
       relations: ['user'],
     });
 
     if (!patient) {
-      throw new NotFoundException(`Patient with user ID ${userId} not found`);
+      throw new NotFoundException('Patient not found');
     }
 
     return formatPatient(patient);
   }
 
   async findOne(id: string) {
-    await this.ensureTablesExist();
-    const patient = await this.getRepository(Patient).findOne({
-      where: { id },
+    const repo = await this.getPatientRepository();
+    const patient = await repo.findOne({
+      where: { id, user: { companies: ArrayContains([this.getTenantSlug()]) } },
       relations: ['user'],
     });
 
     if (!patient) {
-      throw new NotFoundException(`Patient with ID ${id} not found`);
+      throw new NotFoundException('Patient not found');
     }
 
     return formatPatient(patient);
   }
 
-  async update(userId: string, updatePatientDto: UpdatePatientDto) {
-    const patientRepository = this.getPatientRepository();
-    const patient = await patientRepository.findOne({
-      where: { userId },
-    });
-    if (!patient) {
-      throw new NotFoundException(`Patient with user ID ${userId} not found`);
-    }
-    Object.assign(patient, updatePatientDto);
-    return await patientRepository.save(patient);
-  }
+  async remove(_patientId: string) {}
 
-  async remove(userId: string) {
-    await this.ensureTablesExist();
-    const patientRepository = this.getPatientRepository();
-
-    const patient = await patientRepository.exists({
-      where: { userId },
-    });
-
-    if (!patient) {
-      throw new NotFoundException(`Patient with user ID ${userId} not found`);
-    }
-
-    await patientRepository.softDelete({ userId });
-  }
-
-  async restore(userId: string) {
-    await this.ensureTablesExist();
-    const patientRepository = this.getPatientRepository();
-
-    const patient = await patientRepository.exists({
-      where: { userId },
-      withDeleted: true,
-    });
-
-    if (!patient) {
-      throw new NotFoundException(`Patient with ID ${userId} not found`);
-    }
-
-    await patientRepository.restore({ userId });
-  }
+  async restore(_patientId: string) {}
 }

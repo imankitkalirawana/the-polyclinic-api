@@ -1,12 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Repository } from 'typeorm';
-import { getTenantConnection } from '@/tenancy/connection-pool';
-import { TenantMigrationService } from '@/tenancy/services/tenant-migration.service';
+import { getTenantConnection } from 'src/common/db/tenant-connection';
 import { ActivityLog } from '../entities/activity-log.entity';
 import { ActivityLogPayload } from '../interfaces/activity-payload.interface';
 import { EntityType } from '../enums/entity-type.enum';
-import { TenantUser } from '@/client/users/entities/tenant-user.entity';
 
 @Injectable()
 export class ActivityListener {
@@ -14,9 +12,7 @@ export class ActivityListener {
   private static readonly CIRCULAR_LOG_PREVENTION_ENTITY =
     EntityType.ACTIVITY_LOG;
 
-  constructor(
-    private readonly tenantMigrationService: TenantMigrationService,
-  ) {}
+  constructor() {}
 
   @OnEvent('activity.log')
   async handleActivityLog(payload: ActivityLogPayload): Promise<void> {
@@ -43,18 +39,9 @@ export class ActivityListener {
       }
 
       const connection = await getTenantConnection(payload.tenantSlug);
-      await this.tenantMigrationService.runMigrations(payload.tenantSlug);
 
       const repository: Repository<ActivityLog> =
         connection.getRepository(ActivityLog);
-      const userRepository = connection.getRepository(TenantUser);
-
-      let actor = null;
-      if (payload.actorId && payload.actorType === 'USER') {
-        actor = await userRepository.findOne({
-          where: { id: payload.actorId },
-        });
-      }
 
       const activityLog = repository.create({
         entityType: payload.entityType,
@@ -66,7 +53,6 @@ export class ActivityListener {
         newData: payload.newData || null,
         actorType: payload.actorType,
         actorId: payload.actorId || null,
-        actor: actor,
         actorRole: payload.actorRole || null,
         description: payload.description || null,
         stakeholders: payload.stakeholders || [],

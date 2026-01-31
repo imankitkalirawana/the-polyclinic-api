@@ -9,7 +9,10 @@ export const publicOrmConfig: DataSourceOptions = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   schema: 'public',
-  entities: [join(__dirname, './modules/public/**/entities/*.entity.{ts,js}')],
+  entities: [
+    join(__dirname, './modules/public/**/entities/*.entity.{ts,js}'),
+    join(__dirname, './modules/auth/**/entities/*.entity.{ts,js}'),
+  ],
   synchronize: true,
   logging: process.env.NODE_ENV === 'development',
   // ssl: {

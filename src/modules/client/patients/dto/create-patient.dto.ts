@@ -3,54 +3,19 @@ import {
   IsOptional,
   IsEnum,
   IsNumber,
-  IsUUID,
   Min,
   Max,
   IsEmail,
-  ValidatorConstraint,
-  ValidatorConstraintInterface,
-  Validate,
-  ValidationArguments,
+  IsNotEmpty,
 } from 'class-validator';
-import { Gender } from '../entities/patient.entity';
+import { Gender } from '@/public/patients/entities/patient.entity';
 import { Transform } from 'class-transformer';
 
-@ValidatorConstraint({ name: 'PatientNameEmailConstraint', async: false })
-export class PatientNameEmailConstraint implements ValidatorConstraintInterface {
-  validate(_: any, args: ValidationArguments) {
-    const obj = args.object as CreatePatientDto;
-
-    if (!obj) return false;
-
-    // Case 1: userId provided → OK
-    if (obj.userId) return true;
-
-    // Case 2: name + email
-    if (obj.name && obj.email) return true;
-
-    // Case 3: name + phone
-    if (obj.name && obj.phone) return true;
-
-    return false;
-  }
-
-  defaultMessage() {
-    return 'Either userId must be provided, or name with email, or name with phone';
-  }
-}
-
 export class CreatePatientDto {
-  @Validate(PatientNameEmailConstraint)
-  _validationCheck: boolean;
-
-  @IsUUID()
-  @IsOptional()
-  userId: string;
-
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Transform(({ value }) => value.trim())
   @IsEmail()
-  @IsOptional()
-  email?: string;
+  @IsNotEmpty()
+  email: string;
 
   @IsString()
   @IsOptional()
@@ -60,19 +25,23 @@ export class CreatePatientDto {
   @IsOptional()
   phone?: string;
 
+  @IsString()
+  @IsOptional()
+  password?: string;
+
   @IsEnum(Gender)
   @IsOptional()
   gender?: Gender;
-
-  @IsString()
-  @IsOptional()
-  image?: string;
 
   @IsNumber()
   @IsOptional()
   @Min(0)
   @Max(150)
   age?: number;
+
+  @IsString()
+  @IsOptional()
+  dob?: string | Date;
 
   @IsString()
   @IsOptional()

@@ -13,7 +13,8 @@ export class DatabaseInitService implements OnModuleInit {
 
   private async ensureTablesExist() {
     try {
-      const tables = ['users', 'sessions', 'otps', 'tenants'];
+      // Only tables that must exist in public schema (appointment_queue lives in tenant schemas only)
+      const tables: string[] = [];
 
       for (const tableName of tables) {
         await this.ensureTableExists(tableName);
@@ -41,12 +42,6 @@ export class DatabaseInitService implements OnModuleInit {
       if (!result[0].exists) {
         this.logger.warn(
           `Table '${tableName}' does not exist in the database.`,
-        );
-        this.logger.warn(
-          `If this is a fresh database, you may want to enable synchronize for development.`,
-        );
-        this.logger.warn(
-          `Otherwise, please create the table manually or use migrations.`,
         );
       }
     } catch (error) {
