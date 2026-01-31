@@ -18,7 +18,6 @@ import { EmailModule } from './modules/common/email/email.module';
 import { LoggingModule } from './modules/common/logging/logging.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SchemaModule } from './libs/schema/schema.module';
-import { DatabaseModule } from './libs/database/database.module';
 import { ConfigModule } from '@nestjs/config';
 
 import {
@@ -66,7 +65,6 @@ const options: StandardResponseModuleOptions = {};
     EmailModule,
     LoggingModule,
     SchemaModule,
-    DatabaseModule,
   ],
   controllers: [AppController],
   providers: [AppService, DatabaseInitService, SchemaMiddleware],

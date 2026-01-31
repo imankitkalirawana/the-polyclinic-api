@@ -8,8 +8,6 @@ import { PatientTenantMembership } from './modules/public/patients/entities/pati
 import { ClinicalRecord } from './modules/public/clinical/entities/clinical-record.entity';
 import { PatientMembershipAuditLog } from './modules/public/patients/entities/patient-membership-audit.entity';
 import { Doctor } from './modules/public/doctors/entities/doctor.entity';
-import { DoctorTenantMembership } from './modules/public/doctors/entities/doctor-tenant-membership.entity';
-import { DoctorMembershipAuditLog } from './modules/public/doctors/entities/doctor-membership-audit.entity';
 
 export function getTenantConnectionConfig(schema: string): DataSourceOptions {
   // Client entities (appointment_queue, payments, etc.) must only exist in tenant schemas, not public
@@ -40,8 +38,6 @@ export function getTenantConnectionConfig(schema: string): DataSourceOptions {
       PatientMembershipAuditLog,
       // Public schema: global doctors + per-tenant membership
       Doctor,
-      DoctorTenantMembership,
-      DoctorMembershipAuditLog,
     ],
     synchronize: true,
     logging: process.env.NODE_ENV === 'development',
