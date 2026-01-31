@@ -36,7 +36,7 @@ export class PatientsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
+  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST, Role.PATIENT)
   async findAll(@Query('search') search?: string) {
     return this.patientsService.findAll(search);
   }

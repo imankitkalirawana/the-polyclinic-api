@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
-import { Between, Equal, In, MoreThanOrEqual, Not } from 'typeorm';
+import { Between, Equal, In, LessThan, MoreThanOrEqual, Not } from 'typeorm';
 import { Request } from 'express';
 import { CreateQueueDto } from './dto/create-queue.dto';
 import { CurrentUserPayload } from '@/auth/decorators/current-user.decorator';
@@ -58,6 +58,7 @@ export class QueueService {
     private readonly paymentsService: PaymentsService,
     private readonly patientsService: PatientsService,
     private readonly doctorsService: DoctorsService,
+    private readonly patientService: PatientsService,
     private readonly pdfService: PdfService,
     private readonly qrService: QrService,
     private readonly activityService: ActivityService,
@@ -461,11 +462,83 @@ export class QueueService {
         : null,
 
       metaData: {
-        appointmentDate: appointmentDate,
         totalPrevious: previousQueues.length,
         totalNext: next.length,
       },
     };
+  }
+
+  async getQueueForPatient() {
+    const queueRepo = await this.getQueueRepository();
+    const now = new Date();
+    const userId = this.request.user.userId;
+    const patient = await this.patientService.findByUserId(userId);
+
+    const previousQueues = await queueRepo.find({
+      where: [
+        {
+          patientId: patient.id,
+          status: In([QueueStatus.COMPLETED, QueueStatus.CANCELLED]),
+        },
+        {
+          patientId: patient.id,
+          appointmentDate: LessThan(now),
+        },
+      ],
+      relations: queueRelations,
+      order: {
+        appointmentDate: 'DESC',
+      },
+    });
+
+    const nextQueues = await queueRepo.find({
+      where: {
+        patientId: patient.id,
+        status: Not(In([QueueStatus.COMPLETED, QueueStatus.CANCELLED])),
+        appointmentDate: MoreThanOrEqual(now),
+      },
+      relations: queueRelations,
+      order: {
+        appointmentDate: 'ASC',
+      },
+    });
+
+    // latest upcoming appointment
+    const latestUpcomingAppointment = nextQueues[0];
+
+    return {
+      previous: previousQueues.map((queue) =>
+        formatQueue(queue, this.request.user.role),
+      ),
+      current: formatQueue(latestUpcomingAppointment, this.request.user.role),
+      next: nextQueues
+        .slice(1)
+        .map((queue) => formatQueue(queue, this.request.user.role)),
+      metaData: {
+        totalPrevious: previousQueues.length,
+        totalNext: nextQueues.length - 1,
+      },
+    };
+  }
+
+  //get appointment by aid
+  async getAppointmentByAid(aid: string) {
+    const userId = this.request.user.userId;
+
+    let patientId = undefined;
+    if (this.request.user.role === Role.PATIENT) {
+      patientId = (await this.patientService.findByUserId(userId)).id;
+    }
+
+    const queueRepository = await this.getQueueRepository();
+    const queue = await queueRepository.findOne({
+      where: { aid, patientId },
+      relations: queueRelations,
+    });
+    if (!queue) {
+      throw new NotFoundException(`Appointment with AID ${aid} not found`);
+    }
+    return formatQueue(queue, this.request.user.role);
   }
 
   // Call queue by id

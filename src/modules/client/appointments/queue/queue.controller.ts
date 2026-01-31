@@ -94,6 +94,18 @@ export class QueueController {
     return queue;
   }
 
+  @Get('patient/me')
+  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST, Role.PATIENT)
+  getQueueForPatient() {
+    return this.queueService.getQueueForPatient();
+  }
+
+  @Get(':aid')
+  @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST, Role.PATIENT)
+  getAppointmentByAid(@Param('aid') aid: string) {
+    return this.queueService.getAppointmentByAid(aid);
+  }
+
   @Get(':id/activity-logs')
   @Roles(Role.ADMIN, Role.DOCTOR, Role.NURSE, Role.RECEPTIONIST)
   async getActivityLogs(@Param('id') id: string) {
