@@ -13,10 +13,6 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { BearerAuthGuard } from './guards/bearer-auth.guard';
-import {
-  CurrentUser,
-  CurrentUserPayload,
-} from './decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -45,15 +41,15 @@ export class AuthController {
 
   @Get('session')
   @UseGuards(BearerAuthGuard)
-  async session(@CurrentUser() user: CurrentUserPayload) {
-    return await this.authService.getSession(user.user_id);
+  async session() {
+    return await this.authService.getSession();
   }
 
   @Delete('logout')
   @UseGuards(BearerAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async logout(@CurrentUser() user: CurrentUserPayload) {
-    await this.authService.logout(user.session_id, user.user_id);
+  async logout() {
+    await this.authService.logout();
     return null;
   }
 }

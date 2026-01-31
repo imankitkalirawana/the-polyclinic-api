@@ -20,14 +20,6 @@ export class RegisterDto {
   @IsNotEmpty()
   name: string;
 
-  /**
-   * Tenant schema slug to add to this user (normalized lowercase).
-   * Example: "demo"
-   */
-  @IsString()
-  @IsNotEmpty()
-  schema: string;
-
   @IsString()
   @IsOptional()
   phone?: string;

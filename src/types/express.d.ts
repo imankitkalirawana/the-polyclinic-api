@@ -14,7 +14,7 @@ declare global {
     }
 
     interface Request {
-      schema?: string;
+      schema?: string | null | undefined;
     }
   }
 }

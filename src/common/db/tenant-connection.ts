@@ -9,7 +9,9 @@ import { getTenantConnectionConfig } from '../../tenant-orm.config';
 const connections = new Map<string, DataSource>();
 const initPromises = new Map<string, Promise<DataSource>>();
 
-export async function getTenantConnection(schema: string): Promise<DataSource> {
+export async function getTenantConnection(
+  schema: string = 'public',
+): Promise<DataSource> {
   const existing = connections.get(schema);
   if (existing?.isInitialized) return existing;
 

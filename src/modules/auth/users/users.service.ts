@@ -29,9 +29,6 @@ export class UsersService {
 
   private async getConnection() {
     const schema = this.schema;
-    if (!schema) {
-      throw new NotFoundException('Schema not available');
-    }
     return await getTenantConnection(schema);
   }
 
@@ -40,23 +37,37 @@ export class UsersService {
     return connection.getRepository(User);
   }
 
-  async checkUserExistsByEmailAndFail(email: string) {
-    const schema = this.request.schema;
+  async checkUserExistsByEmail(email: string) {
     const userRepository = await this.getUserRepository();
     const user = await userRepository.findOne({
       where: {
         email,
-        companies: ArrayContains([schema]),
+        companies: ArrayContains([this.schema]),
+      },
+    });
+    return user;
+  }
+
+  async checkUserExistsByEmailAndFail(email: string) {
+    const userRepository = await this.getUserRepository();
+    const user = await userRepository.findOne({
+      where: {
+        email,
+        companies: ArrayContains([this.schema]),
       },
     });
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(
+        'User not found with email: ' + email,
+        'schema: ' + this.schema,
+      );
     }
     return user;
   }
 
   // safely check if the email is not already taken
   async checkEmailIsNotTaken(email: string) {
+    console.log('checkEmailIsNotTaken', email, this.schema);
     const userRepository = await this.getUserRepository();
     const user = await userRepository.findOne({
       where: {
@@ -67,16 +78,22 @@ export class UsersService {
     if (user) {
       throw new ConflictException('Email already taken');
     }
+    return true;
   }
 
   async create(dto: CreateUserDto) {
     const userRepository = await this.getUserRepository();
 
     await this.checkEmailIsNotTaken(dto.email);
+    dto.companies = [this.schema];
 
     const user = userRepository.create(dto);
-    await this.updatePassword(user.id, dto.password);
-    return user;
+    if (!user) {
+      throw new NotFoundException('Could not create user');
+    }
+    const saved = await userRepository.save(user);
+    await this.updatePassword(saved.id, dto.password);
+    return saved;
   }
 
   async findAll(): Promise<User[]> {
@@ -118,7 +135,8 @@ export class UsersService {
   }
 
   async updatePassword(id: string, password: string) {
-    await this.userRepository.update(id, {
+    const userRepository = await this.getUserRepository();
+    await userRepository.update(id, {
       password_digest: await bcrypt.hash(password, 10),
     });
   }

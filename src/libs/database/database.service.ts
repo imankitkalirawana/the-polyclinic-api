@@ -46,7 +46,6 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
 
     this.dataSource = new DataSource(options);
     await this.dataSource.initialize();
-    this.logger.log('DataSource initialized (schema-level tenancy)');
   }
 
   private async ensureSchemaExists() {

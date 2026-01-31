@@ -13,16 +13,16 @@ export class User extends BaseEntity {
   @Index()
   email: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  phone: string;
+  @Column({ type: 'varchar', length: 15, nullable: true })
+  phone: string | null;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   password_digest: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', default: Role.PATIENT })
   role: Role;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', default: CompanyType.CLIENT })
   @Index()
   company_type: CompanyType;
 

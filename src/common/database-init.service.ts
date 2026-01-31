@@ -13,7 +13,7 @@ export class DatabaseInitService implements OnModuleInit {
 
   private async ensureTablesExist() {
     try {
-      const tables = ['users', 'sessions', 'otps', 'tenants'];
+      const tables = ['appointment_queue'];
 
       for (const tableName of tables) {
         await this.ensureTableExists(tableName);
@@ -41,12 +41,6 @@ export class DatabaseInitService implements OnModuleInit {
       if (!result[0].exists) {
         this.logger.warn(
           `Table '${tableName}' does not exist in the database.`,
-        );
-        this.logger.warn(
-          `If this is a fresh database, you may want to enable synchronize for development.`,
-        );
-        this.logger.warn(
-          `Otherwise, please create the table manually or use migrations.`,
         );
       }
     } catch (error) {
