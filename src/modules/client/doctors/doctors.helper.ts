@@ -1,16 +1,12 @@
 import { Doctor } from '@/public/doctors/entities/doctor.entity';
-import { DoctorTenantMembership } from '@/public/doctors/entities/doctor-tenant-membership.entity';
 import { redactField } from 'src/common/utils/redact.util';
 import { Role } from 'src/common/enums/role.enum';
 
-export function formatDoctor(
-  doctor: Doctor,
-  currentRole: Role,
-  membership?: DoctorTenantMembership | null,
-) {
+export function formatDoctor(doctor: Doctor, currentRole: Role) {
   return {
     id: doctor.id,
-    code: membership?.code ?? null,
+    // TODO: Add code
+    code: null,
     user_id: doctor.user_id,
     name: doctor.user.name,
     email: redactField({
@@ -25,8 +21,9 @@ export function formatDoctor(
     }),
     specialization: doctor.specialization,
     education: doctor.education,
-    designation: membership?.designation ?? null,
-    seating: membership?.seating ?? null,
+    // TODO: Add designation and seating
+    designation: null,
+    seating: null,
     experience: doctor.experience,
     createdAt: doctor.createdAt,
     updatedAt: doctor.updatedAt,

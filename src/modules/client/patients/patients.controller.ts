@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
@@ -20,7 +19,6 @@ import {
 } from '@/auth/decorators/current-user.decorator';
 import { StandardParam, StandardParams } from 'nest-standard-response';
 import { CreatePatientDto } from './dto/create-patient.dto';
-import { UpdateSharingDto } from './dto/update-sharing.dto';
 
 @Controller('client/patients')
 @UseGuards(BearerAuthGuard, RolesGuard)
@@ -53,18 +51,6 @@ export class PatientsController {
   async getMyClinicalRecords(@CurrentUser() user: CurrentUserPayload) {
     const patient = await this.patientsService.findByUserId(user.user_id);
     return this.patientsService.getClinicalRecords(patient.id);
-  }
-
-  @Patch('me/sharing')
-  @Roles(Role.PATIENT)
-  async updateMySharing(
-    @CurrentUser() user: CurrentUserPayload,
-    @Body() dto: UpdateSharingDto,
-  ) {
-    return this.patientsService.updateMySharingPreference(
-      user.user_id,
-      dto.shareMedicalHistory,
-    );
   }
 
   @Get(':id')

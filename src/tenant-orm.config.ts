@@ -4,9 +4,7 @@ import { ActivityLog } from './modules/common/activity/entities/activity-log.ent
 import { User } from './modules/auth/entities/user.entity';
 import { Session } from './modules/auth/entities/session.entity';
 import { Patient } from './modules/public/patients/entities/patient.entity';
-import { PatientTenantMembership } from './modules/public/patients/entities/patient-tenant-membership.entity';
 import { ClinicalRecord } from './modules/public/clinical/entities/clinical-record.entity';
-import { PatientMembershipAuditLog } from './modules/public/patients/entities/patient-membership-audit.entity';
 import { Doctor } from './modules/public/doctors/entities/doctor.entity';
 
 export function getTenantConnectionConfig(schema: string): DataSourceOptions {
@@ -31,12 +29,8 @@ export function getTenantConnectionConfig(schema: string): DataSourceOptions {
       User,
       // Needed because User has relations to Session
       Session,
-      // Public schema: global patient + access control + shared records
       Patient,
-      PatientTenantMembership,
       ClinicalRecord,
-      PatientMembershipAuditLog,
-      // Public schema: global doctors + per-tenant membership
       Doctor,
     ],
     synchronize: true,
