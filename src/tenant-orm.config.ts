@@ -1,10 +1,18 @@
 import { join } from 'path';
 import { DataSourceOptions } from 'typeorm';
 import { ActivityLog } from './modules/common/activity/entities/activity-log.entity';
+import { User } from './modules/auth/entities/user.entity';
+import { Session } from './modules/auth/entities/session.entity';
+import { Patient } from './modules/common/patients/entities/patient.entity';
+import { Doctor } from './modules/common/doctors/entities/doctor.entity';
 
-export function getTenantConnectionConfig(
-  tenantSlug: string,
-): DataSourceOptions {
+export function getTenantConnectionConfig(schema: string): DataSourceOptions {
+  // Client entities (appointment_queue, payments, etc.) must only exist in tenant schemas, not public
+  const clientEntities =
+    schema === 'public'
+      ? []
+      : [join(__dirname, './modules/client/**/entities/*.entity.{ts,js}')];
+
   return {
     type: 'postgres',
     host: process.env.DB_HOST,
@@ -12,10 +20,16 @@ export function getTenantConnectionConfig(
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    schema: tenantSlug,
+    schema,
     entities: [
-      join(__dirname, './modules/client/**/entities/*.entity.{ts,js}'),
+      ...clientEntities,
       ActivityLog,
+      // Allow tenant schema entities to reference global users in public schema
+      User,
+      // Needed because User has relations to Session
+      Session,
+      Patient,
+      Doctor,
     ],
     synchronize: true,
     logging: process.env.NODE_ENV === 'development',

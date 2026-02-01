@@ -1,25 +1,25 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 // import { APP_GUARD } from '@nestjs/core';
 // import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TenantsModule } from '@/public/tenants/tenants.module';
 import { publicOrmConfig } from './orm.config';
 import { DatabaseInitService } from './common/database-init.service';
-import { AuthModule as PublicAuthModule } from './modules/public/auth/auth.module';
-import { AuthModule as TenantedAuthModule } from './modules/client/auth/auth.module';
-import { UsersModule as PublicUsersModule } from './modules/public/users/users.module';
-import { UsersModule as TenantedUsersModule } from './modules/client/users/users.module';
-import { PatientsModule } from './modules/client/patients/patients.module';
+import { SchemaMiddleware } from './common/middleware/schema.middleware';
+import { PatientsModule } from './modules/common/patients/patients.module';
 import { PaymentsModule } from './modules/client/payments/payments.module';
-import { DoctorsModule } from './modules/client/doctors/doctors.module';
+import { DoctorsModule } from './modules/common/doctors/doctors.module';
 import { QueueModule } from './modules/client/appointments/queue/queue.module';
 import { ActivityModule } from './modules/common/activity/activity.module';
 import { CronModule } from './modules/common/cron/cron.module';
 import { EmailModule } from './modules/common/email/email.module';
 import { LoggingModule } from './modules/common/logging/logging.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { SchemaModule } from './libs/schema/schema.module';
+import { ConfigModule } from '@nestjs/config';
+
 import {
   StandardResponseModule,
   StandardResponseModuleOptions,
@@ -52,11 +52,10 @@ const options: StandardResponseModuleOptions = {};
       signOptions: { expiresIn: '1h' },
       global: true,
     }),
-    TenantsModule,
-    PublicAuthModule,
-    PublicUsersModule,
-    TenantedAuthModule,
-    TenantedUsersModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    AuthModule,
     PatientsModule,
     DoctorsModule,
     QueueModule,
@@ -65,15 +64,17 @@ const options: StandardResponseModuleOptions = {};
     CronModule,
     EmailModule,
     LoggingModule,
+    SchemaModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    DatabaseInitService,
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: ThrottlerGuard,
-    // },
-  ],
+  providers: [AppService, DatabaseInitService, SchemaMiddleware],
+  // {
+  //   provide: APP_GUARD,
+  //   useClass: ThrottlerGuard,
+  // },
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(SchemaMiddleware).forRoutes('*');
+  }
+}

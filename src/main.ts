@@ -2,7 +2,6 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { TenancyMiddleware } from './modules/tenancy/tenancy.middleware';
 import { CloudLoggerService } from './modules/common/logging/cloud-logger.service';
 import * as express from 'express';
 
@@ -22,7 +21,6 @@ async function bootstrap() {
     express.raw({ type: 'application/json' }),
   );
 
-  app.use(new TenancyMiddleware().use.bind(new TenancyMiddleware()));
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
@@ -61,6 +59,8 @@ async function bootstrap() {
       },
     }),
   );
+
+  app.enableShutdownHooks();
 
   const port = process.env.PORT ?? 8000;
   await app.listen(port, '0.0.0.0');

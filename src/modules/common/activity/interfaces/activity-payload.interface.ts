@@ -7,9 +7,9 @@ export interface ActivityLogPayload {
   entityId: string;
   module: string;
   action: ActivityAction;
-  changedFields?: Record<string, any>;
-  previousData?: Record<string, any>;
-  newData?: Record<string, any>;
+  changedFields?: Record<string, unknown>;
+  previousData?: Record<string, unknown>;
+  newData?: Record<string, unknown>;
   actorType: ActorType;
   actorId?: string | null;
   actorRole?: string | null;

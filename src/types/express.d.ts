@@ -11,12 +11,10 @@ declare global {
       phone: string | null;
       role: Role;
       sessionId: string;
-      type: 'tenant';
-      tenantSlug: string;
     }
 
     interface Request {
-      tenantSlug?: string;
+      schema?: string | null | undefined;
     }
   }
 }

@@ -10,7 +10,7 @@ import {
 import { ActivityAction } from '../enums/activity-action.enum';
 import { ActorType } from '../enums/actor-type.enum';
 import { EntityType } from '../enums/entity-type.enum';
-import { TenantUser } from '@/client/users/entities/tenant-user.entity';
+import { User } from '@/auth/entities/user.entity';
 
 @Entity('activity_logs')
 export class ActivityLog {
@@ -53,9 +53,13 @@ export class ActivityLog {
   @Index()
   actorId: string | null;
 
-  @ManyToOne(() => TenantUser, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => User, {
+    nullable: true,
+    onDelete: 'SET NULL',
+    createForeignKeyConstraints: false,
+  })
   @JoinColumn({ name: 'actorId' })
-  actor: TenantUser | null;
+  actor: User | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   actorRole: string | null;

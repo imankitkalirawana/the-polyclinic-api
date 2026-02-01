@@ -13,8 +13,8 @@ interface LogUpdateOptions {
   entityType: EntityType;
   entityId: string;
   module: string;
-  before: any;
-  after: any;
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
   description?: string;
   stakeholders?: string[];
 }
@@ -23,10 +23,13 @@ interface LogStatusChangeOptions {
   entityType: EntityType;
   entityId: string;
   module: string;
-  before: any;
-  after: any;
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
   description?: string;
-  additionalFields?: Record<string, { before: any; after: any }>;
+  additionalFields?: Record<
+    string,
+    { before: Record<string, unknown>; after: Record<string, unknown> }
+  >;
   stakeholders?: string[];
 }
 
@@ -47,10 +50,10 @@ export class ActivityService {
     }
 
     try {
-      const tenantSlug = (this.request as any)?.tenantSlug;
+      const schema = this.request?.schema;
       const eventPayload = {
         ...payload,
-        tenantSlug,
+        schema,
       };
       this.eventEmitter.emit('activity.log', eventPayload);
     } catch (error) {
@@ -103,8 +106,9 @@ export class ActivityService {
     } = options;
 
     const statusField = 'status';
-    const beforeStatus = formatLabel(before[statusField]);
-    const afterStatus = formatLabel(after[statusField]);
+    // TODO: Fix this type
+    const beforeStatus = formatLabel(before[statusField] as string);
+    const afterStatus = formatLabel(after[statusField] as string);
 
     if (
       beforeStatus === afterStatus &&
@@ -113,7 +117,7 @@ export class ActivityService {
       return;
     }
 
-    const changedFields: Record<string, any> = {
+    const changedFields: Record<string, unknown> = {
       ...additionalFields,
     };
 
@@ -154,7 +158,7 @@ export class ActivityService {
     entityType: EntityType;
     entityId: string;
     module: string;
-    data: any;
+    data: Record<string, unknown>;
     description?: string;
     stakeholders?: string[];
   }): void {
@@ -183,7 +187,7 @@ export class ActivityService {
     entityType: EntityType;
     entityId: string;
     module: string;
-    data: any;
+    data: Record<string, unknown>;
     description?: string;
     stakeholders?: string[];
   }): void {
@@ -205,7 +209,7 @@ export class ActivityService {
     entityType: EntityType,
     entityId: string,
     module: string,
-    data: any,
+    data: Record<string, unknown>,
     description?: string,
     stakeholders?: string[],
   ): void {
@@ -228,10 +232,10 @@ export class ActivityService {
   }
 
   private getActorId(): string | null {
-    return (this.request as any)?.user?.userId || null;
+    return this.request?.user?.userId || null;
   }
 
   private getActorRole(): string | null {
-    return (this.request as any)?.user?.role || null;
+    return this.request?.user?.role || null;
   }
 }

@@ -1,15 +1,14 @@
 import {
   Injectable,
   Inject,
+  Logger,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
-import { DataSource } from 'typeorm';
-import { BaseTenantService } from '../../tenancy/base-tenant.service';
-import { CONNECTION } from '../../tenancy/tenancy.symbols';
-import { TenantAuthInitService } from '../../tenancy/tenant-auth-init.service';
+import { Repository } from 'typeorm';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import {
   Payment,
@@ -23,31 +22,42 @@ import {
 } from '../appointments/queue/entities/queue.entity';
 import { RazorpayService } from './razorpay.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { getTenantConnection } from 'src/common/db/tenant-connection';
 
 @Injectable()
-export class PaymentsService extends BaseTenantService {
+export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
-    @Inject(REQUEST) request: Request,
-    @Inject(CONNECTION) connection: DataSource | null,
-    tenantAuthInitService: TenantAuthInitService,
+    @Inject(REQUEST) private readonly request: Request,
     private readonly razorpayService: RazorpayService,
-  ) {
-    super(request, connection, tenantAuthInitService, PaymentsService.name);
+  ) {}
+
+  private getTenantSlug(): string {
+    const schema = this.request?.schema;
+    if (!schema) {
+      throw new UnauthorizedException('Schema is required');
+    }
+    return schema;
   }
 
-  private getPaymentRepository() {
-    return this.getRepository(Payment);
+  private async getPaymentRepository(): Promise<Repository<Payment>> {
+    const connection = await getTenantConnection(this.getTenantSlug());
+    return connection.getRepository(Payment);
+  }
+
+  private async getQueueRepository(): Promise<Repository<Queue>> {
+    const connection = await getTenantConnection(this.getTenantSlug());
+    return connection.getRepository(Queue);
   }
 
   async createPayment(createPaymentDto: CreatePaymentDto) {
-    await this.ensureTablesExist();
-
     // first call razorpay to create order
     const order = await this.razorpayService.createOrder(
       createPaymentDto.amount,
     );
 
-    const paymentRepo = this.getPaymentRepository();
+    const paymentRepo = await this.getPaymentRepository();
     const payment = paymentRepo.create({
       ...createPaymentDto,
       provider: PaymentProvider.RAZORPAY,
@@ -65,8 +75,7 @@ export class PaymentsService extends BaseTenantService {
   }
 
   async verifyPayment(dto: VerifyPaymentDto) {
-    await this.ensureTablesExist();
-    const paymentRepo = this.getPaymentRepository();
+    const paymentRepo = await this.getPaymentRepository();
 
     const payment = await paymentRepo.findOne({
       where: { orderId: dto.orderId },
@@ -97,10 +106,9 @@ export class PaymentsService extends BaseTenantService {
     return savedPayment;
   }
 
-  async handleWebhookEvent(webhookPayload: any) {
-    await this.ensureTablesExist();
-    const paymentRepo = this.getPaymentRepository();
-    const queueRepo = this.getRepository(Queue);
+  async handleWebhookEvent(webhookPayload: Record<string, unknown>) {
+    const paymentRepo = await this.getPaymentRepository();
+    const queueRepo = await this.getQueueRepository();
 
     const event = webhookPayload.event;
 
@@ -114,9 +122,10 @@ export class PaymentsService extends BaseTenantService {
   }
 
   private async handlePaymentCaptured(
+    // TODO: Fix this type
     webhookPayload: any,
-    paymentRepo: any,
-    queueRepo: any,
+    paymentRepo: Repository<Payment>,
+    queueRepo: Repository<Queue>,
   ) {
     const paymentData = webhookPayload.payload.payment.entity;
     const orderId = paymentData.order_id;
@@ -146,10 +155,10 @@ export class PaymentsService extends BaseTenantService {
     await paymentRepo.save(payment);
 
     await queueRepo.update(
+      { id: payment.referenceId },
       {
-        referenceId: payment.id,
+        status: QueueStatus.BOOKED,
       },
-      { status: QueueStatus.BOOKED },
     );
 
     this.logger.log(
@@ -157,7 +166,11 @@ export class PaymentsService extends BaseTenantService {
     );
   }
 
-  private async handlePaymentFailed(webhookPayload: any, paymentRepo: any) {
+  private async handlePaymentFailed(
+    // TODO: fix this type
+    webhookPayload: any,
+    paymentRepo: Repository<Payment>,
+  ) {
     const paymentData = webhookPayload.payload.payment.entity;
     const orderId = paymentData.order_id;
 

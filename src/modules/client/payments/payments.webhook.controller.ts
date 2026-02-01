@@ -73,6 +73,7 @@ export class PaymentsWebhookController {
   }
 
   private async resolveTenantFromWebhook(
+    // TODO: fix this type
     webhookPayload: any,
   ): Promise<string | null> {
     try {

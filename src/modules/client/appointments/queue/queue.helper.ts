@@ -1,6 +1,7 @@
 import { Role } from 'src/common/enums/role.enum';
 import { Queue } from './entities/queue.entity';
 import { redactField } from 'src/common/utils/redact.util';
+import { calculateAge } from '@/common/patients/patients.helper';
 
 interface FormattedQueue extends Queue {
   nextQueueId?: string;
@@ -41,12 +42,11 @@ export function formatQueue(queue: FormattedQueue, role?: Role | null) {
       ? {
           id: queue.patient.id,
           gender: queue.patient.gender,
-          age: queue.patient.age,
+          age: calculateAge(queue.patient.dob),
           email: queue.patient.user?.email ?? null,
           name: queue.patient.user?.name ?? null,
           phone: queue.patient.user?.phone ?? null,
-          userId: queue.patient.user?.id ?? null,
-          image: queue.patient.user?.image ?? null,
+          user_id: queue.patient.user?.id ?? null,
         }
       : null,
 
@@ -59,9 +59,13 @@ export function formatQueue(queue: FormattedQueue, role?: Role | null) {
             currentRole: role,
             targetRole: queue.doctor.user?.role,
           }),
+          phone: redactField({
+            value: queue.doctor.user.phone ?? null,
+            currentRole: role,
+            targetRole: queue.doctor.user?.role,
+          }),
           name: queue.doctor.user?.name ?? null,
-          userId: queue.doctor.user?.id ?? null,
-          image: queue.doctor.user?.image ?? null,
+          user_id: queue.doctor.user?.id ?? null,
         }
       : null,
 
@@ -79,7 +83,6 @@ export function formatQueue(queue: FormattedQueue, role?: Role | null) {
             currentRole: role,
             targetRole: queue.bookedByUser.role,
           }),
-          image: queue.bookedByUser.image ?? null,
         }
       : null,
   };

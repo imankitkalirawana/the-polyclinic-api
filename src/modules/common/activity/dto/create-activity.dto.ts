@@ -26,15 +26,15 @@ export class CreateActivityDto {
 
   @IsOptional()
   @IsObject()
-  changedFields?: Record<string, any>;
+  changedFields?: Record<string, unknown>;
 
   @IsOptional()
   @IsObject()
-  previousData?: Record<string, any>;
+  previousData?: Record<string, unknown>;
 
   @IsOptional()
   @IsObject()
-  newData?: Record<string, any>;
+  newData?: Record<string, unknown>;
 
   @IsEnum(ActorType)
   actorType: ActorType;
@@ -57,4 +57,3 @@ export class CreateActivityDto {
   @IsUUID(undefined, { each: true })
   stakeholders?: string[] | null;
 }
-

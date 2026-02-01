@@ -7,7 +7,7 @@ export interface LogMetadata {
   traceId?: string;
   spanId?: string;
   userId?: string;
-  tenantSlug?: string;
+  schema?: string;
   requestId?: string;
   httpMethod?: string;
   httpUrl?: string;
@@ -38,12 +38,6 @@ export class CloudLoggerService implements LoggerService {
     // Can be enabled in development by setting GCP_PROJECT_ID
     const enableGcpLogging =
       process.env.GCP_ENABLE_IN_DEV === 'true' || this.isProduction;
-
-    // temperarily log the credentials
-    console.log(
-      '[GCP] GCP_CREDENTIALS:',
-      JSON.stringify(process.env.GCP_CREDENTIALS, null, 2),
-    );
 
     const credentials = process.env.GCP_CREDENTIALS;
 
