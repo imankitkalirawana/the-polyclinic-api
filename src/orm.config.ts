@@ -12,6 +12,7 @@ export const publicOrmConfig: DataSourceOptions = {
   entities: [
     join(__dirname, './modules/public/**/entities/*.entity.{ts,js}'),
     join(__dirname, './modules/auth/**/entities/*.entity.{ts,js}'),
+    join(__dirname, './modules/common/**/entities/*.entity.{ts,js}'),
   ],
   synchronize: true,
   logging: process.env.NODE_ENV === 'development',

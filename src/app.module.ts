@@ -19,6 +19,7 @@ import { LoggingModule } from './modules/common/logging/logging.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SchemaModule } from './libs/schema/schema.module';
 import { ConfigModule } from '@nestjs/config';
+import { MasterKeyModule } from './modules/common/utilities/master-key/masterkey.module';
 
 import {
   StandardResponseModule,
@@ -65,6 +66,7 @@ const options: StandardResponseModuleOptions = {};
     EmailModule,
     LoggingModule,
     SchemaModule,
+    MasterKeyModule,
   ],
   controllers: [AppController],
   providers: [AppService, DatabaseInitService, SchemaMiddleware],
