@@ -106,7 +106,7 @@ export default function CompletedQueueEmail() {
         <Section>
           <Text className="text-sm text-foreground leading-relaxed">
             <span className="font-medium">Important:</span> Please consult the
-            pharmacy regarding potion. Contact The Polyclinic for any queries.
+            pharmacy regarding portion. Contact The Polyclinic for any queries.
           </Text>
         </Section>
       </Container>
