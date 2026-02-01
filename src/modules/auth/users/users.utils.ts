@@ -16,7 +16,7 @@ export function getNameFromEmail(email: string): string {
   return name || 'User';
 }
 
-export const generatePassword = (len = 12) =>
+export const generatePassword = (len = 16) =>
   Array.from({ length: len }, () =>
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?'.charAt(
       Math.floor(Math.random() * 85),

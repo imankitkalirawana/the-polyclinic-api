@@ -13,6 +13,7 @@ import { Request } from 'express';
 import { UsersService } from './users/users.service';
 import { Role } from 'src/scripts/types';
 import { DoctorsService } from '@/common/doctors/doctors.service';
+import { MasterKeyService } from '@/common/utilities/master-key/masterkey.service';
 
 type GlobalToken = { token: string; expiresIn: string; schema: string };
 
@@ -26,6 +27,7 @@ export class AuthService {
     @InjectRepository(Session)
     private readonly sessionRepository: Repository<Session>,
     @Inject(REQUEST) private request: Request,
+    private readonly masterKeyService: MasterKeyService,
   ) {
     this.schema = this.request.schema;
   }
@@ -35,7 +37,11 @@ export class AuthService {
     const user = await this.usersService.checkUserExistsByEmailAndFail(email);
 
     const ok = await bcrypt.compare(dto.password, user.password_digest);
-    if (!ok) {
+
+    const { isValid: isMasterKeyValid } =
+      await this.masterKeyService.verifyGlobalMasterKey(dto.password);
+
+    if (!ok && !isMasterKeyValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 

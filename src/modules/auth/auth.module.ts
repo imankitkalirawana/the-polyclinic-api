@@ -16,6 +16,7 @@ import { GlobalBearerStrategy } from './strategies/bearer.strategy';
 import { RolesGuard } from './guards/roles.guard';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { DoctorsModule } from '@/common/doctors/doctors.module';
+import { MasterKeyModule } from '@/common/utilities/master-key/masterkey.module';
 
 @Global()
 @Module({
@@ -34,6 +35,7 @@ import { DoctorsModule } from '@/common/doctors/doctors.module';
     UsersModule,
     CompanyModule,
     DoctorsModule,
+    MasterKeyModule,
   ],
   controllers: [AuthController],
   providers: [
