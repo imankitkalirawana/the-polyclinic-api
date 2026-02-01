@@ -4,4 +4,3 @@ export class UpdateSharingDto {
   @IsBoolean()
   shareMedicalHistory: boolean;
 }
-
